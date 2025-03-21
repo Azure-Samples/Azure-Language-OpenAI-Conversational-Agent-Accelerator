@@ -8,35 +8,41 @@ This template is perfect for developers and organizations looking to design, cus
 
 **Leverage the combined capabilities of Azure AI Language and Azure OpenAI for enhanced conversational agent solutions.**
 
-## Important Security Notice
+#### Important Security Notice
 
 This template, the application code and configuration it contains, has been built to showcase Microsoft Azure specific services and tools. We strongly advise our customers not to make this code part of their production environments without implementing or enabling additional security features.
 
-#### Jump to: [Features](#features) • [Gettting Started](#getting-started) • [Guidance](#guidance)
+### MENU: [**OVERVIEW and USER STORY**](#overview) • [**QUICK DEPLOY**](#getting-started) • [**GUIDANCE**](#guidance)
 
-## Features
-
-### Overview
+## Overview
 Below is a reference architecture of this Agent template:
 ![image](https://github.com/user-attachments/assets/8e499373-578e-41ee-a4ec-8c858964db13)
 
-#### Key components of this template 
+### Key components of this template 
 1. **Client-Side User Interface:** A web-based client-side user interface allows you to quickly explore and test this Agent template.
 2. **Triage Agent:** The Agent allows for a dynamic, adaptable workflow with multiple orchestration options including LLM function calling. 
 3. **Conversational Language Understanding (CLU) Agent:** CLU allows you to define the top intents you want to ensure response quality. Whether completing a task or addressing specific customer needs, CLU provides a mechanism to ensure the agent accurately understands and executes the process of handling pre-defined intents.
 4. **Custom Question Answering (CQA) Agent:** CQA allows you to create and manage predefined QA pairs to deliver precise responses. CQA can respond consistently, improving reliability, particularly for high-stake or regulatory-sensitive conversations. 
 5. **PII Detection and Redaction for Privacy Protection:** Protecting user privacy is a top priority. Azure AI Language’s Personally Identifiable Information (PII) can identify and redact sensitive information before sending to any other agents for processing.
-6. **LLM with RAG to Handle Everything Else:** In this template, we are showcasing an RAG solution using Azure AI Search to handle missed intents or user queries on lower-priority topics. This RAG solution can be replaced with your existing one. The predefined intents and question-answer pairs can be appended and updated for CLU agent and CQA agent over time based on evolving business needs and DSATs (dissatisfaction) discovered in the RAG responses. 
+6. **LLM with Retrieval-Augmented Generation (RAG) to Handle Everything Else:** In this template, we are showcasing an RAG solution using Azure AI Search to handle missed intents or user queries on lower-priority topics. This RAG solution can be replaced with your existing one. The predefined intents and question-answer pairs can be appended and updated for CLU agent and CQA agent over time based on evolving business needs and DSATs (dissatisfaction) discovered in the RAG responses. 
 7. **Agent Configuration for "Plug-and-Play":** The template is designed to allow you to easily swap, add, or remove agents/components to tailor to your specific needs. Whether you want to add custom intents, adjust fallback mechanisms, or incorporate additional data sources, the modular nature of this template makes it simple to configure.
 
-#### Benefits it brings
+### Benefits it brings
+Azure AI Language already offers two services: Conversational Language Understanding (CLU) and Custom Question Answering (CQA). CLU analyzes user inputs to extract intents and entities. CQA uses pre-defined question-answer pairs or a pre-configured knowledgebase to answer user questions.
+#### How CLU can help
+A common issue with intent prediction in conversational AI is the misclassification of user intents and inaccurate entity identification, especially when the user's input does not match any predefined intents. This can lead to poor user experience due to inaccurately invoked AI Agents or custom actions for intent fulfillment.  
+
+CLU can help by performing easy-to-configure and intuitive model training to map utterances to newly added pre-defined intents with high confidence. This ensures that the system can handle inputs gracefully, provide more accurate responses, and achieve fast and low-cost intent classification.
+
+By leveraging CLU, users can enhance their conversational AI solutions, improve intent predication accuracy, making it a valuable agent/workflow routing solution.
+#### How CQA can help
 A typical RAG solution allows users to chat with an AI agent and obtained grounded responses. Chat messages are sent directly to AOAI, where a specified model (e.g. GPT-4o) processes each message and creates a response. This is beneficial when customers have their own grounding data (e.g. product manuals, company information for Q/A). They would set up an Azure AI Search index to query their grounding data, and preprocess user chat messages by fetching relevant grounding data and passing it to the AOAI model downstream. Because the model now "knows" the grounding data to base its response around, user chats are met with contextual responses, improving the chat experience.
 
 However, issues with RAG solutions (DSATs, or dissatisfactory examples) are hard to address. It is difficult to debug or update grounding data to fix inaccurate "grounded" responses. Further, this process can be expensive and time-consuming
 
-Azure AI Language can help address these issues and expand the functionality of existing RAG chat solutions. Azure AI Language already offers two services: Conversational Language Understanding (CLU) and Custom Question Answering (CQA). CLU analyzes user inputs to extract intents and entities. CQA uses pre-defined question-answer pairs or a pre-configured knowledgebase to answer user questions.
+Azure AI Language can help address these issues and expand the functionality of existing RAG chat solutions. 
 
-#### Calling Stack Demonstrated in the Accelerator Template
+## Calling Stack Demonstrated in the Accelerator Template
 ![image](./docs/images/architecture.png)
 This project includes a `UnifiedConversationOrchestrator` class that unifies both `CLU` and `CQA` functionality. Using a variety of different routing strategies, this orchestrator can intelligently route user input to a `CLU` or `CQA` model.
 
@@ -57,7 +63,7 @@ The container app demo included with this project showcases the following chat e
 - If `CLU` was called, call extended business logic based on intent/entities.
 - Agent summarizes response (what business action was performed, provide answer to question, provide grounded response).
 
-#### Use Case
+## Use Case
 Consider the following real-world example: Contoso Outdoors, a fictional retail company, has an existing RAG chat solution using AOAI. Their grounding data is composed of product manuals of the outdoor gear they sell. Because of this, users can easily ask the AI chat questions regarding Contoso Outdoors products (e.g. What tents do you sell?) and obtain grounded, contextual, and accurate responses.
 However, if a user asks questions about the company's return policy, the RAG chat will not be able to respond accurately, as the grounding data does not contain any information regarding a return policy. It can be expensive and time consuming to update the grounding data to address this. Further, if a user asks a question about their online order status, even with updates of grounding data, RAG is not able to respond effectively here, as information is dynamic.
 Incorporating CLU/CQA using a UnifiedConversationOrchestrator solves these problems. Contoso Outdoors would set up a CQA model that can answer extended questions (e.g. their return policy), and set up a CLU model that can identify online order actions (e.g. checking the status of an order). Now, both of these DSATs are resolved, and Contoso Outdoors still maintains their existing RAG chat functionality, as UnifiedConversationOrchestrator falls back to the original RAG chat if CLU/CQA are not fit to respond to the user chat.
@@ -65,7 +71,7 @@ Incorporating CLU/CQA using a UnifiedConversationOrchestrator solves these probl
 
 This displays the "better together" story when using Azure AI Language and Azure OpenAI.
 
-#### Note:
+## Note:
 **GenAI is used in the following contexts:**
 - Demo code: General AOAI GPT chat client to break user inputs into separate utterances.
 - Demo code: General AOAI GPT `RAG` client to provide grounded responses as a fallback function.
