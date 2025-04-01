@@ -65,7 +65,9 @@ The container instance demo included with this project showcases the following c
 
 ### Use Case
 Consider the following real-world example: Contoso Outdoors, a fictional retail company, has an existing RAG chat solution using AOAI. Their grounding data is composed of product manuals of the outdoor gear they sell. Because of this, users can easily ask the AI chat questions regarding Contoso Outdoors products (e.g. What tents do you sell?) and obtain grounded, contextual, and accurate responses.
+
 However, if a user asks questions about the company's return policy, the RAG chat will not be able to respond accurately, as the grounding data does not contain any information regarding a return policy. It can be expensive and time consuming to update the grounding data to address this. Further, if a user asks a question about their online order status, even with updates of grounding data, RAG is not able to respond effectively here, as information is dynamic.
+
 Incorporating CLU/CQA using a UnifiedConversationOrchestrator solves these problems. Contoso Outdoors would set up a CQA model that can answer extended questions (e.g. their return policy), and set up a CLU model that can identify online order actions (e.g. checking the status of an order). Now, both of these DSATs are resolved, and Contoso Outdoors still maintains their existing RAG chat functionality, as UnifiedConversationOrchestrator falls back to the original RAG chat if CLU/CQA are not fit to respond to the user chat.
 
 ![image](./docs/images/ui.png)
