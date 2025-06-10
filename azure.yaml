@@ -3,28 +3,21 @@
 name: azure-language-openai-conversational-agent
 metadata:
   template: azure-language-openai-conversational-agent@1.0
-# workflows:
-#   up:
-#     steps:
-#       - azd: provision # azd deploy not needed, as we directly provision the app below
-# services:
-#   app:
-#     project: src
-#     language: python
-#     host: containerapp # containerinstance not supported
 hooks:
+  # TODO: preprovision quota script:
   postprovision:
-    windows:
-      run: |
-        Write-Host "Web app URL: "
-        Write-Host "$env:WEB_APP_URL" -ForegroundColor Cyan
-      shell: pwsh
-      continueOnError: false
-      interactive: true
+    run: |
+      bash infra/scripts/postprovision_generate_env.sh
+      source infra/.env
+      bash infra/scripts/postprovision_run_setup.sh
+    shell: sh
+    continueOnError: false
+    interactive: true
+  predeploy:
     posix:
       run: |
-        echo "Web app URL: "
-        echo $WEB_APP_URL
-      shell: sh
-      continueOnError: false
-      interactive: true
+        source infra/.env
+        bash infra/scripts/predeploy_create_container.sh
+    shell: sh
+    continueOnError: false
+    interactive: true

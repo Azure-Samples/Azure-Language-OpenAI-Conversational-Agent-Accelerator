@@ -1,6 +1,17 @@
 // ========== main.bicep ========== //
 targetScope = 'resourceGroup'
 
+// Conv-Agent:
+@allowed([
+  'BYPASS'
+  'CLU'
+  'CQA'
+  'ORCHESTRATION'
+  'FUNCTION_CALLING'
+  'TRIAGE_AGENT'
+])
+param router_type string = 'TRIAGE_AGENT'
+
 // GPT model:
 @description('Name of GPT model to deploy.')
 @allowed([
@@ -50,6 +61,13 @@ module managed_identity 'resources/managed_identity.bicep' = {
   }
 }
 
+module container_registry 'resources/container_registry.bicep' = {
+  name: 'deploy_container_registry'
+  params: {
+    suffix: suffix
+  }
+}
+
 module storage_account 'resources/storage_account.bicep' = {
   name: 'deploy_storage_account'
   params: {
@@ -83,30 +101,65 @@ module role_assignments 'resources/role_assignments.bicep' = {
   name: 'create_role_assignments'
   params: {
     managed_identity_name: managed_identity.outputs.name
+    container_registry_name: container_registry.outputs.name
     ai_foundry_name: ai_foundry.outputs.name
     search_service_name: search_service.outputs.name
     storage_account_name: storage_account.outputs.name
   }
 }
 
-//----------- Deploy App -----------//
-module container_instance 'resources/container_instance.bicep' = {
-  name: 'deploy_container_group'
-  params: {
-    suffix: suffix
-    agents_project_endpoint: ai_foundry.outputs.agents_project_endpoint
-    aoai_deployment: ai_foundry.outputs.gpt_deployment_name
-    aoai_endpoint: ai_foundry.outputs.openai_endpoint
-    language_endpoint: ai_foundry.outputs.language_endpoint
-    managed_identity_name: managed_identity.outputs.name
-    search_endpoint: search_service.outputs.endpoint
-    blob_container_name: storage_account.outputs.blob_container_name
-    embedding_deployment_name: ai_foundry.outputs.embedding_deployment_name
-    embedding_model_dimensions: ai_foundry.outputs.embedding_model_dimensions
-    embedding_model_name: ai_foundry.outputs.embedding_model_name
-    storage_account_connection_string: storage_account.outputs.connection_string
-    storage_account_name: storage_account.outputs.name
-  }
-}
+//----------- Outputs -----------//
 
-output WEB_APP_URL string = container_instance.outputs.fqdn
+// Resource Group:
+output LOCATION string = resourceGroup().location
+output RG_NAME string = resourceGroup().name
+output RG_SUFFIX string = suffix
+
+// Managed Identity:
+output USE_MI_AUTH string = 'true'
+output MI_ID string = managed_identity.outputs.id
+output MI_CLIENT_ID string = managed_identity.outputs.client_id
+
+// Language:
+output LANGUAGE_ENDPOINT string = ai_foundry.outputs.language_endpoint
+output CLU_PROJECT_NAME string = 'conv-agent-clu'
+output CLU_MODEL_NAME string = 'clu-m1'
+output CLU_DEPLOYMENT_NAME string = 'clu-m1-d1'
+output CLU_CONFIDENCE_THRESHOLD string = '0.5'
+output CQA_PROJECT_NAME string = 'conv-agent-cqa'
+output CQA_DEPLOYMENT_NAME string = 'production'
+output CQA_CONFIDENCE_THRESHOLD string = '0.5'
+output ORCHESTRATION_PROJECT_NAME string = 'conv-agent-orch'
+output ORCHESTRATION_MODEL_NAME string = 'orch-m1'
+output ORCHESTRATION_DEPLOYMENT_NAME string = 'orch-m1-d1'
+output ORCHESTRATION_CONFIDENCE_THRESHOLD string = '0.5'
+output PII_ENABLED string = 'true'
+output PII_CATEGORIES string = 'organization,person'
+output PII_CONFIDENCE_THRESHOLD string = '0.5'
+
+// AOAI:
+output AOAI_ENDPOINT string = ai_foundry.outputs.openai_endpoint
+output AOAI_DEPLOYMENT string = ai_foundry.outputs.gpt_deployment_name
+output EMBEDDING_DEPLOYMENT_NAME string = ai_foundry.outputs.embedding_deployment_name
+output EMBEDDING_MODEL_NAME string = ai_foundry.outputs.embedding_model_name
+output EMBEDDING_MODEL_DIMENSIONS string = string(ai_foundry.outputs.embedding_model_dimensions)
+
+// Agents:
+output AGENTS_PROJECT_ENDPOINT string = ai_foundry.outputs.agents_project_endpoint
+output MAX_AGENT_RETRY string = '3'
+output DELETE_OLD_AGENTS string = 'true'
+
+// Search:
+output SEARCH_ENDPOINT string = search_service.outputs.endpoint
+output SEARCH_INDEX_NAME string = 'conv-agent-manuals-idx'
+
+// Storage:
+output STORAGE_ACCOUNT_NAME string = storage_account.outputs.name
+output STORAGE_ACCOUNT_CONNECTION_STRING string = storage_account.outputs.connection_string
+output BLOB_CONTAINER_NAME string = storage_account.outputs.blob_container_name
+
+// ACR:
+output ACR_NAME string = container_registry.outputs.name
+
+// Conv-Agent:
+output ROUTER_TYPE string = router_type

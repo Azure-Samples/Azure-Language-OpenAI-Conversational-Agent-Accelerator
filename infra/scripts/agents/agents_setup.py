@@ -7,6 +7,7 @@ from utils import bind_parameters
 
 config = {}
 
+ENV_FILE = os.environ.get("ENV_FILE")
 DELETE_OLD_AGENTS = os.environ.get("DELETE_OLD_AGENTS", "false").lower() == "true"
 PROJECT_ENDPOINT = os.environ.get("AGENTS_PROJECT_ENDPOINT")
 MODEL_NAME = os.environ.get("AOAI_DEPLOYMENT")
@@ -97,6 +98,6 @@ with agents_client:
 
     print(f"Created agent, ID: {agent.id}")
 
-    # Output the agent ID to be captured as env variable
-    print(agent.id)
+    with open(ENV_FILE, 'a') as fp:
+        fp.write(f"TRIAGE_AGENT_ID={agent.id}")
     

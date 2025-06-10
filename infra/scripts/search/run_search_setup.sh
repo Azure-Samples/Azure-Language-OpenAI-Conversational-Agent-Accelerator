@@ -7,9 +7,7 @@ cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}
 
-# Arguments:
-storage_account_name=$1
-blob_container_name=$2
+echo "Running search setup..."
 
 # Fetch data:
 cp ../../data/${product_info_file} .
@@ -22,18 +20,13 @@ cd product_info && tar -xvzf ${product_info_file} && cd ..
 echo "Uploading files to blob container..."
 az storage blob upload-batch \
     --auth-mode login \
-    --destination ${blob_container_name} \
-    --account-name ${storage_account_name} \
+    --destination ${BLOB_CONTAINER_NAME} \
+    --account-name ${STORAGE_ACCOUNT_NAME} \
     --source "product_info" \
     --pattern "*.md" \
     --overwrite
 
-# Install requirements:
-echo "Installing requirements..."
 python3 -m pip install -r requirements.txt
-
-# Run setup:
-echo "Running index setup..."
 python3 index_setup.py
 
 # Cleanup:

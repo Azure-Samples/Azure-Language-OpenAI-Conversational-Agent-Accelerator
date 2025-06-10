@@ -1,4 +1,3 @@
 azure-identity
 azure-ai-language-conversations
 azure-ai-language-questionanswering
-azure-ai-agents

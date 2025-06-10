@@ -3,36 +3,19 @@
 set -e
 
 cwd=$(pwd)
-
-if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
-    # Script is being sourced
-    script_dir=$(dirname $(realpath "${BASH_SOURCE[0]}"))
-else
-    # Script is being executed
-    script_dir=$(dirname $(realpath "$0"))
-fi
-
+script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}
+
+echo "Running language setup..."
 
 # Fetch data:
 cp ../../data/*.json .
 cp ../../openapi_specs/*.json .
 
-# Install requirements:
-echo "Installing requirements..."
 python3 -m pip install -r requirements.txt
-
-# Run setup:
-echo "Running CLU setup..."
 python3 clu_setup.py
-echo "Running CQA setup..."
 python3 cqa_setup.py
-echo "Running Orchestration setup..."
 python3 orchestration_setup.py
-echo "Running agent setup..."
-TRIAGE_AGENT_ID=$(python3 agent_setup.py | tail -n1)
-echo "TRIAGE_AGENT_ID: $TRIAGE_AGENT_ID"
-export TRIAGE_AGENT_ID
 
 # Cleanup:
 rm *.json

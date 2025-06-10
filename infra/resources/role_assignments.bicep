@@ -1,6 +1,9 @@
 @description('Name of Managed Identity resource.')
 param managed_identity_name string
 
+@description('Name of Container Registry resource.')
+param container_registry_name string
+
 @description('Name of Storage Account resource.')
 param storage_account_name string
 
@@ -13,6 +16,22 @@ param search_service_name string
 //----------- Managed Identity Resource -----------//
 resource managed_identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: managed_identity_name
+}
+
+//----------- SCOPE: Container Registry Role Assignments -----------//
+resource container_registry 'Microsoft.ContainerRegistry/registries@2025-04-01' existing = {
+  name: container_registry_name
+}
+
+// PRINCIPAL: Managed Identity
+resource mi_acr_pull_role_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(container_registry.id, managed_identity.id, acr_pull_role.id)
+  scope: container_registry
+  properties: {
+    principalId: managed_identity.properties.principalId
+    roleDefinitionId: acr_pull_role.id
+    principalType: 'ServicePrincipal'
+  }
 }
 
 //----------- SCOPE: Storage Account Role Assignments -----------//
@@ -152,6 +171,11 @@ resource search_cognitive_services_openai_contributor_role_assignment 'Microsoft
 }
 
 //----------- Built-in Roles -----------//
+@description('Built-in Acr Pull role (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/containers#acrpull).')
+resource acr_pull_role 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+    name: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+}
+
 @description('Built-in Storage Blob Data Contributor role (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-contributor).')
 resource storage_blob_data_contributor_role 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
     name: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
