@@ -9,8 +9,7 @@ cd ${script_dir}
 echo "Running language setup..."
 
 # Fetch data:
-cp ../../data/*.json .
-cp ../../openapi_specs/*.json .
+cp ../data/*.json .
 
 python3 -m pip install -r requirements.txt
 python3 clu_setup.py

@@ -53,7 +53,7 @@ agents_client = AgentsClient(
 auth = OpenApiManagedAuthDetails(security_scheme=OpenApiManagedSecurityScheme(audience="https://cognitiveservices.azure.com/"))
 
 # Read in the OpenAPI spec from a file
-with open("clu.json", "r") as f:
+with open("openapi_specs/clu.json", "r") as f:
     clu_openapi_spec = json.loads(bind_parameters(f.read(), config))
 
 clu_api_tool = OpenApiTool(
@@ -64,7 +64,7 @@ clu_api_tool = OpenApiTool(
 )
 
 # Read in the OpenAPI spec from a file
-with open("cqa.json", "r") as f:
+with open("openapi_specs/cqa.json", "r") as f:
     cqa_openapi_spec = json.loads(bind_parameters(f.read(), config))
 
 # Initialize an Agent OpenApi tool using the read in OpenAPI spec
