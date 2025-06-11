@@ -2,6 +2,7 @@
 
 set -e
 
+product_info_file="product_info.tar.gz"
 cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}
@@ -9,7 +10,7 @@ cd ${script_dir}
 echo "Running search setup..."
 
 # Fetch data:
-cp ../data/product_info.tar.gz .
+cp ../data/${product_info_file} .
 
 # Unzip data:
 mkdir product_info && mv ${product_info_file} product_info/
