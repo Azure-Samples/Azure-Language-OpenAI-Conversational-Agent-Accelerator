@@ -1,4 +1,5 @@
 #!/bin/bash
+# env vars should have been set during provisioning:
 
 set -e
 

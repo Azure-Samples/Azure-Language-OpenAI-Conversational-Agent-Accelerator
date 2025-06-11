@@ -1,9 +1,11 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 import json
 import os
+import re
 from azure.ai.agents import AgentsClient
 from azure.ai.agents.models import OpenApiTool, OpenApiManagedAuthDetails,OpenApiManagedSecurityScheme
-from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
-from utils import bind_parameters
+from azure.identity import DefaultAzureCredential
 
 config = {}
 
@@ -17,6 +19,27 @@ config['clu_project_name'] = os.environ.get("CLU_PROJECT_NAME")
 config['clu_deployment_name'] = os.environ.get("CLU_DEPLOYMENT_NAME")
 config['cqa_project_name'] = os.environ.get("CQA_PROJECT_NAME")
 config['cqa_deployment_name'] = os.environ.get("CQA_DEPLOYMENT_NAME")
+
+
+def bind_parameters(input_string: str, parameters: dict) -> str:
+    """
+    Replace occurrences of '${key}' in the input string with the value of the key in the parameters dictionary.
+
+    :param input_string: The string containing keys of value to replace.
+    :param parameters: A dictionary containing the values to substitute in the input string.
+    :return: The modified string with parameters replaced.
+    """
+    if parameters is None:
+        return input_string
+
+    # Define the regex pattern to match '${key}'
+    parameter_binding_regex = re.compile(r"\$\{([^}]+)\}")
+
+    # Replace matches with corresponding values from the dictionary
+    return parameter_binding_regex.sub(
+        lambda match: parameters.get(match.group(1), match.group(0)),
+        input_string
+    )
 
 
 # Create agent client
@@ -73,9 +96,6 @@ with agents_client:
         """
 
     instructions = bind_parameters(instructions, config)
-
-    # Flag to determine if old agents should be deleted
-    DELETE_OLD_AGENTS = os.environ.get("DELETE_OLD_AGENTS", "false").lower() == "true"
 
     if DELETE_OLD_AGENTS:
         # List all existing agents
