@@ -9,6 +9,8 @@ script_dir=$(dirname $(realpath "$0"))
 src_dir="${script_dir}/../../src"
 cd $src_dir
 
+source ${script_dir}/../.env
+
 # Build docker image:
 repo="conv-agent"
 image="app"
