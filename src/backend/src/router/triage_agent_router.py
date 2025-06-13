@@ -39,21 +39,22 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
         Triage agent router function.
         """
         try: 
-            # Create thread for communication
-            thread = agents_client.threads.create()
-            _logger.info(f"Created thread, ID: {thread.id}")
-
-            # Create and add user message to thread
-            message = agents_client.messages.create(
-                thread_id=thread.id,
-                role="user",
-                content=utterance,
-            )
-            _logger.info(f"Created message: {message['id']}")
-            
             # Process the agent run and handle retries
             max_retries = int(os.environ.get("MAX_AGENT_RETRY", 3))
             for attempt in range(1, max_retries + 1):
+                # Create thread for communication
+                thread = agents_client.threads.create()
+                _logger.info(f"Created thread, ID: {thread.id}")
+
+                # Create and add user message to thread
+                message = agents_client.messages.create(
+                    thread_id=thread.id,
+                    role="user",
+                    content=utterance,
+                )
+                _logger.info(f"Created message: {message['id']}")
+
+                # Create and process the agent run
                 run = agents_client.runs.create_and_process(thread_id=thread.id, agent_id=agent.id)
                 _logger.info(f"Run attempt {attempt} finished with status: {run.status}")
 
@@ -67,13 +68,14 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
 
                             # Load the agent response into a JSON
                             if msg.role == "assistant" :
+                                # Check if agent response is able to be parsed
                                 try:
-                                    # Attempt to parse the agent response as JSON
+                                    _logger.info(f"Agent response parsed successfully: {last_text.text.value}")
                                     data = json.loads(last_text.text.value)
+                                    _logger.info(f"Agent response parsed successfully: {data}")
                                     parsed_result = parse_response(data)
                                     return parsed_result
                                 
-
                                 except Exception as e:
                                     _logger.error(f"Runtime call failed with error: {e}")
                                     if attempt == max_retries:
@@ -88,7 +90,10 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
                 # If run fails, handle retries or raise an error if max retries reached
                 elif attempt == max_retries:
                     _logger.error(f"Run failed after {max_retries} attempts: {run.last_error}")
-                    raise RuntimeError()
+                    _logger.error(f"Runtime call failed with error: {e}")
+                    return {
+                         "error": e
+                    }
                 
                 else:
                     _logger.warning(f"Run failed on attempt {attempt}: {run.last_error}. Retrying...")
@@ -99,6 +104,8 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
             return {
                 "error": e
             }
+
+            _logger.info(f"Triage agent did not return a value.")
 
     return triage_agent_router
 
