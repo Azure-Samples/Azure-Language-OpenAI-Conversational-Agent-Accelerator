@@ -88,43 +88,36 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
         """
         Triage agent router function.
         """
-        try: 
-            # Process the agent run and handle retries
-            max_retries = int(os.environ.get("MAX_AGENT_RETRY", 3))
-            
-            # Create thread and process agent run with retries
-            for attempt in range(1, max_retries + 1):
-                try:
-                    # Create thread for communication
-                    thread = create_thread(utterance)
-
-                    # Create and process the agent run
-                    run = agents_client.runs.create_and_process(thread_id=thread.id, agent_id=agent.id)
-                    _logger.info(f"Run attempt {attempt} finished with status: {run.status}")
-
-                    # Check the run status
-                    if run.status == "completed":
-                        # If run is successful, handle the response
-                        return handle_successful_run(thread, attempt)
-                    
-                # Handle exceptions during agent run processing
-                except Exception as e:
-                    # Log the error and retry if max retries not reached
-                    if attempt == max_retries:
-                        return {
-                            "error": e
-                        }
-                    else:
-                        _logger.warning(f"Retrying agent run... Attempt {attempt + 1}/{max_retries}")
-                
-        # Handle unexpected exceptions outside of the retry loop
-        except Exception as e:
-            _logger.error(f"An unexpected error occurred while processing the triage agent: {e}")
-            return {
-                "error": e
-            }
+        # Process the agent run and handle retries
+        max_retries = int(os.environ.get("MAX_AGENT_RETRY", 3))
         
-    return triage_agent_router
+        # Initialize error return value
+        error_return_value = {
+            "error": ValueError("The run did not complete successfully.")
+        }
+            
+        # Create thread and process agent run with retries
+        for attempt in range(1, max_retries + 1):
+            try:
+                # Create thread for communication
+                thread = create_thread(utterance)
+
+                # Create and process the agent run
+                run = agents_client.runs.create_and_process(thread_id=thread.id, agent_id=agent.id)
+                _logger.info(f"Run attempt {attempt} finished with status: {run.status}")
+
+                # Check the run status
+                if run.status == "completed":
+                    # If run is successful, handle the response
+                    return handle_successful_run(thread, attempt)
+                
+            # Handle exceptions during agent run processing
+            except Exception as e:
+                error_return_value["error"] = e
+                _logger.warning(f"Agent run {attempt + 1} failed with exception: {e}. Retrying...")
+        
+        # If all attempts fail, return the error
+        return error_return_value
 
 def parse_response(
     response: dict
