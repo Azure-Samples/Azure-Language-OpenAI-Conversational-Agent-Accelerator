@@ -75,6 +75,10 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
                 except Exception as e:
                     _logger.error(f"Agent response failed with error: {e}")
                     raise ValueError(f"Failed to parse agent response: {e}")
+                
+        # If no valid response found, raise an error to be handled by the caller
+        _logger.error("No valid agent response found in the thread.")
+        raise ValueError("No valid agent response found in the thread.")
 
     def triage_agent_router(
         utterance: str,
@@ -102,9 +106,7 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
                     if run.status == "completed":
                         # If run is successful, handle the response
                         return handle_successful_run(thread, attempt)
-                    else:
-                        raise ValueError(f"Run failed with status: {run.status}, last error: {run.last_error}")
-                
+                    
                 # Handle exceptions during agent run processing
                 except Exception as e:
                     # Log the error and retry if max retries not reached
