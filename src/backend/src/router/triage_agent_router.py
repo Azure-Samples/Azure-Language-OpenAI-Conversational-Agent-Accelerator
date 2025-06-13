@@ -77,24 +77,25 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
                                     return parsed_result
                                 
                                 except Exception as e:
-                                    _logger.error(f"Runtime call failed with error: {e}")
+                                    _logger.error(f"Agent response failed with error: {e}")
                                     if attempt == max_retries:
+                                        # Return error if max retries reached
                                         return {
                                             "error": e
                                         }
                                     else:
                                         # Exit the inner loop to retry agent run
-                                        _logger.info(f"Retrying agent run due to runtime error... Attempt {attempt + 1}/{max_retries}")
+                                        _logger.info(f"Retrying agent run due to agent response error... Attempt {attempt + 1}/{max_retries}")
                                         break
             
-                # If run fails, handle retries or raise an error if max retries reached
+                # Return error if max retries reached
                 elif attempt == max_retries:
-                    _logger.error(f"Run failed after {max_retries} attempts: {run.last_error}")
-                    _logger.error(f"Runtime call failed with error: {e}")
+                    _logger.error(f"Agent run failed with error: {e}")
                     return {
                          "error": e
                     }
                 
+                # Retry if limit not reached
                 else:
                     _logger.warning(f"Run failed on attempt {attempt}: {run.last_error}. Retrying...")
         
@@ -104,8 +105,6 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
             return {
                 "error": e
             }
-
-            _logger.info(f"Triage agent did not return a value.")
 
     return triage_agent_router
 

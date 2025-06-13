@@ -58,7 +58,7 @@ with agents_client:
 
     # Define the instructions for the agent
     instructions = """
-                You are a triage agent. Your goal is to answer questions and redirect message according to their intent. You have at your disposition 2 tools but can only use ONE:
+        You are a triage agent. Your goal is to answer questions and redirect message according to their intent. You have at your disposition 2 tools but can only use ONE:
         1. cqa_api: to answer customer questions such as procedures and FAQs.
         2. clu_api: to extract the intent of the message.
         You must use the ONE of the tools to perform your task. You should only use one tool at a time, and do NOT chain the tools together. Only if the tools are not able to provide the information, you can answer according to your general knowledge. You must return the full API response for either tool and ensure it's a valid JSON.
