@@ -32,7 +32,7 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
 
     def create_thread(utterance: str):
         """
-        Create a thread for the agent run.
+        Helper function to create a thread for the agent run.
         """
         # Create thread for communication
         thread = agents_client.threads.create()
@@ -53,7 +53,7 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
         attempt: int
     ) -> dict:
         """
-        Handle successful agent run.
+        Helper function to handle a successful agent run
         """
         # Parse the agent response from the successful run
         _logger.info(f"Agent run succeeded on attempt {attempt}.")
@@ -76,34 +76,6 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
                     _logger.error(f"Agent response failed with error: {e}")
                     raise ValueError(f"Failed to parse agent response: {e}")
 
-    def process_agent_run_with_retry(
-        utterance: str,
-        max_retries: int
-    ) -> dict:
-        """
-        Process the agent run with retry logic.
-        """
-        for attempt in range(1, max_retries + 1):
-            try:
-                # Create thread for communication
-                thread = create_thread(utterance)
-
-                # Create and process the agent run
-                run = agents_client.runs.create_and_process(thread_id=thread.id, agent_id=agent.id)
-                _logger.info(f"Run attempt {attempt} finished with status: {run.status}")
-
-                if run.status == "completed":
-                    return handle_successful_run(thread, attempt)
-                
-            except Exception as e:
-                _logger.error(f"Run failed on attempt {attempt}: {e}")
-                if attempt == max_retries:
-                    return {
-                        "error": e
-                    }
-                else:
-                    _logger.warning(f"Retrying agent run... Attempt {attempt + 1}/{max_retries}")
-                
     def triage_agent_router(
         utterance: str,
         language: str,
@@ -126,7 +98,9 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
                     run = agents_client.runs.create_and_process(thread_id=thread.id, agent_id=agent.id)
                     _logger.info(f"Run attempt {attempt} finished with status: {run.status}")
 
+                    # Check the run status
                     if run.status == "completed":
+                        # If run is successful, handle the response
                         return handle_successful_run(thread, attempt)
                     else:
                         raise ValueError(f"Run failed with status: {run.status}, last error: {run.last_error}")
@@ -141,68 +115,13 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
                     else:
                         _logger.warning(f"Retrying agent run... Attempt {attempt + 1}/{max_retries}")
                 
-        # Handle unexpected exceptions
+        # Handle unexpected exceptions outside of the retry loop
         except Exception as e:
             _logger.error(f"An unexpected error occurred while processing the triage agent: {e}")
             return {
                 "error": e
             }
-        #     for attempt in range(1, max_retries + 1):
-        #         # Create thread for communication
-        #         thread = create_thread(utterance)
-
-        #         # Create and process the agent run
-        #         run = agents_client.runs.create_and_process(thread_id=thread.id, agent_id=agent.id)
-        #         _logger.info(f"Run attempt {attempt} finished with status: {run.status}")
-
-        #         if run.status == "completed":
-        #             # Fetch and log all messages if successful run
-        #             messages = agents_client.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)
-        #             for msg in messages:
-        #                 if msg.text_messages:
-        #                     last_text = msg.text_messages[-1]
-        #                     _logger.info(f"{msg.role}: {last_text.text.value}")
-
-        #                     # Load the agent response into a JSON
-        #                     if msg.role == "assistant" :
-        #                         # Check if agent response is able to be parsed
-        #                         try:
-        #                             _logger.info(f"Agent response parsed successfully: {last_text.text.value}")
-        #                             data = json.loads(last_text.text.value)
-        #                             _logger.info(f"Agent response parsed successfully: {data}")
-        #                             parsed_result = parse_response(data)
-        #                             return parsed_result
-                                
-        #                         except Exception as e:
-        #                             _logger.error(f"Agent response failed with error: {e}")
-        #                             if attempt == max_retries:
-        #                                 # Return error if max retries reached
-        #                                 return {
-        #                                     "error": e
-        #                                 }
-        #                             else:
-        #                                 # Exit the inner loop to retry agent run
-        #                                 _logger.info(f"Retrying agent run due to agent response error... Attempt {attempt + 1}/{max_retries}")
-        #                                 break
-            
-        #         # Return error if max retries reached
-        #         elif attempt == max_retries:
-        #             _logger.error(f"Agent run failed with error: {e}")
-        #             return {
-        #                  "error": e
-        #             }
-                
-        #         # Retry if limit not reached
-        #         else:
-        #             _logger.warning(f"Run failed on attempt {attempt}: {run.last_error}. Retrying...")
         
-        # # Add error handling for unexpected exceptions
-        # except Exception as e:
-        #     _logger.error(f"An error occurred while processing the triage agent: {e}")
-        #     return {
-        #         "error": e
-        #     }
-
     return triage_agent_router
 
 def parse_response(
