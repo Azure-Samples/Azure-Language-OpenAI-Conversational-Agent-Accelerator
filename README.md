@@ -17,7 +17,7 @@ This template, the application code and configuration it contains, have been bui
 
 This solution leverages the combined capabilities of Azure AI Language, Azure AI Agent Service and Azure OpenAI for enhanced conversational agent solutions. The following image is a reference architecture diagram of this Agent template.
 
-![image](https://github.com/user-attachments/assets/1d847138-98d2-4ae9-926a-2bb6a92dc614)
+![image](./docs/images/agent_flow.png)
 
 1. **Client-Side User Interface:** A web-based client-side user interface allows you to quickly explore and test this Agent template.
 2. **Orchestrator:** The orchestrator allows for a dynamic, adaptable workflow with multiple orchestration options including utilizing an intent routing agent based on [this template](https://github.com/azure-ai-foundry/foundry-samples/tree/main/samples/agent-catalog/msft-agent-samples/foundry-agent-service-sdk/intent-routing-agent), LLM function calling, CLU for intent identification only and CQA for returning exact pre-set answers only, etc. Both intent routing agent and LLM function calling options leverages CLU and CQA to provide high-quality intent identficiation and exact question-answering. See the routing strategies section down below for more details between these options. 
@@ -124,10 +124,10 @@ For best latency performance, we recommend you choose a region close to your phy
 | **Setting** | **Description** |  **Default value** |
 |------------|----------------|  ------------|
 | **GPT Model Name** | `gpt-4o` or `gpt-4o-mini` | `gpt-4o-mini` |  
-| **GPT Model Deployment Capacity** | Configure capacity for **GPT model deployment** | `5k` |
+| **GPT Model Deployment Capacity** | Configure capacity for **GPT model deployment** | `100k` |
 | **GPT Deployment Type** | `GlobalStandard` or `Standard` |  `GlobalStandard` |
 | **Embedding Model name** | `text-embedding-ada-002` or `text-embedding-3-small` | `text-embedding-ada-002` |
-| **Embedding Model Capacity** | Configure capacity for **embedding model deployment** |  `5k` |
+| **Embedding Model Capacity** | Configure capacity for **embedding model deployment** |  `100k` |
 | **Embedding Deployment Type** | `GlobalStandard` or `Standard` |  `GlobalStandard` |
 
 The models, deployment types, and capacities you choose may depend on the region you select. To help you in choosing what is available in your subscription, please run the helper script:
