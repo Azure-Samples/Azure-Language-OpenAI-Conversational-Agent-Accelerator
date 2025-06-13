@@ -5,8 +5,8 @@ import json
 import logging
 import pii_redacter
 from typing import Callable
-from azure.ai.agents import AgentsClient, AgentThread
-from azure.ai.agents.models import ListSortOrder
+from azure.ai.agents import AgentsClient
+from azure.ai.agents.models import ListSortOrder, AgentThread
 from router.clu_router import parse_response as parse_clu_response
 from router.cqa_router import parse_response as parse_cqa_response
 from utils import get_azure_credential
