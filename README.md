@@ -15,12 +15,12 @@ This template, the application code and configuration it contains, have been bui
 
 ## Features
 
-This solution leverages the combined capabilities of Azure AI Language and Azure OpenAI for enhanced conversational agent solutions. The following image is a reference architecture diagram of this Agent template.
+This solution leverages the combined capabilities of Azure AI Language, Azure AI Agent Service and Azure OpenAI for enhanced conversational agent solutions. The following image is a reference architecture diagram of this Agent template.
 
 ![image](https://github.com/user-attachments/assets/1d847138-98d2-4ae9-926a-2bb6a92dc614)
 
 1. **Client-Side User Interface:** A web-based client-side user interface allows you to quickly explore and test this Agent template.
-2. **Orchestrator:** The orchestrator allows for a dynamic, adaptable workflow with multiple orchestration options including LLM function calling. 
+2. **Orchestrator:** The orchestrator allows for a dynamic, adaptable workflow with multiple orchestration options including utilizing an intent routing agent based on [this template](https://github.com/azure-ai-foundry/foundry-samples/tree/main/samples/agent-catalog/msft-agent-samples/foundry-agent-service-sdk/intent-routing-agent), LLM function calling, CLU for intent identification only and CQA for returning exact pre-set answers only, etc. Both intent routing agent and LLM function calling options leverages CLU and CQA to provide high-quality intent identficiation and exact question-answering. See the routing strategies section down below for more details between these options. 
 3. **Conversational Language Understanding (CLU):** CLU enables you to define the top intents to ensure response quality. Whether completing a task or addressing specific customer needs, CLU provides a mechanism to ensure the agent accurately understands and executes the process of handling predefined intents. You can update the top intents as necessary to accommodate evolving business needs.
 4. **Custom Question Answering (CQA):** CQA allows you to create and manage predefined QA pairs to deliver precise responses. CQA can respond consistently, improving reliability, particularly for high-stakes or regulatory-sensitive conversations. You can update the predefined QA pairs as needed to match your growing business needs.
 5. **PII Detection and Redaction (PII):** Protecting user privacy is a top priority. Azure AI Language’s Personally Identifiable Information (PII) can identify and redact sensitive information before sending to LLM for processing.
@@ -44,14 +44,12 @@ Azure AI Language CQA can help address these issues and expand the functionality
 
 ## Agent Architecture
 ![image](./docs/images/architecture.png)
-This project includes a `UnifiedConversationOrchestrator` class that unifies both `CLU` and `CQA` functionality. Using a variety of different routing strategies, this orchestrator can intelligently route user input to a `CLU` or `CQA` model.
+This project includes a `UnifiedConversationOrchestrator` class that unifies the call to different routing strategies, which can intelligently route user input to intent routing agent, CLU-only, CQA-only, etc., based on the specified router type.
 
-There is also fallback functionality when any of the following occurs: neither runtime is called, API call failed, confidence threshold not met, `CLU` did not recognize an intent, `CQA` failed to answer the question.
-
-This fallback functionality can be configured to be any function. In this user-story, fallback will be the original `RAG` solution. The orchestrator object takes a string message as input, and outputs a dictionary object containing information regarding what runtime was called, relevant outputs, was fallback called, etc.
+There is also fallback functionality when any of the following occurs: neither runtime is called, API call failed, confidence threshold not met, `CLU` did not recognize an intent, or `CQA` failed to answer the question. This fallback functionality can be configured to be any function. In this user-story, fallback will be the original `RAG` solution. The orchestrator object takes a string message as input, and outputs a dictionary object containing information regarding what runtime was called, relevant outputs, was fallback called, etc.
 
 When combined with an existing `RAG` solution, adding a `UnifiedConversationOrchestrator` can help in the following ways:
-- Manual overrides of DSAT examples using `CQA`.
+- Use 'CQA' to quick fix and override incorrect answers from 'RAG' solution.
 - Extended chat functionality based on recognized intents/entities using `CLU`.
 - Consistent fallback to original chat functionality with `RAG`.
 Further, users can provide their own business logic to call based on `CLU` results (e.g. with an `OrderStatus` intent and `OrderId` entity, user can include business logic to query a database to check the order status).
@@ -59,7 +57,7 @@ Further, users can provide their own business logic to call based on `CLU` resul
 The container instance demo included with this project showcases the following chat experience:
 - User inputs chat dialog.
 - AOAI node preprocesses by breaking input into separate utterances.
-- Orchestrator routes each utterance to either `CLU`, `CQA`, or fallback `RAG`.
+- Orchestrator routes each utterance to either `CLU`, `CQA` (through an intent routing agent, LLM function calls or direct API call), or fallback `RAG`.
 - If `CLU` was called, call extended business logic based on intent/entities.
 - Agent summarizes response (what business action was performed, provide answer to question, provide grounded response).
 
@@ -68,28 +66,29 @@ Consider the following real-world example: Contoso Outdoors, a fictional retail 
 
 However, if a user asks questions about the company's return policy, or something misclassified to grounding data, the RAG chat will not be able to respond accurately, as the grounding data does not contain any information regarding a return policy. It can be expensive and time consuming to update the grounding data to address this. Further, if a user asks a question about their online order status, even with updates of grounding data, RAG is not able to respond effectively here, as information is dynamic.
 
-Incorporating CLU/CQA using a UnifiedConversationOrchestrator solves these problems. Contoso Outdoors would set up a CQA model that can answer extended questions (e.g. their return policy), and set up a CLU model that can identify online order actions (e.g. checking the status of an order). Now, both of these DSATs are resolved, and Contoso Outdoors still maintains their existing RAG chat functionality, as UnifiedConversationOrchestrator falls back to the original RAG chat if CLU/CQA are not fit to respond to the user chat.
+Incorporating CLU/CQA (through an intent routing agent or LLM function calls) using a UnifiedConversationOrchestrator solves these problems. Contoso Outdoors would set up a CQA model that can answer extended questions (e.g. their return policy), and set up a CLU model that can identify online order actions (e.g. checking the status of an order). Now, both of these DSATs are resolved, and Contoso Outdoors still maintains their existing RAG chat functionality, as UnifiedConversationOrchestrator falls back to the original RAG chat if CLU/CQA are not fit to respond to the user chat.
 
 ![image](./docs/images/ui.png)
 
-This displays the "better together" story when using Azure AI Language and Azure OpenAI.
+This displays the "better together" story when using Azure AI Language with Azure AI Agent Service and/or Azure OpenAI to provide a deterministic conversational agent experience. Learn more about related offerings from this blog post: [Announcing Azure AI Language new features to accelerate your agent development](https://techcommunity.microsoft.com/blog/azure-ai-services-blog/announcing-azure-ai-language-new-features-to-accelerate-your-agent-development/4415216).
 
 ## Notes:
 **GenAI is used in the following contexts:**
 - Demo code: General AOAI GPT chat client to break user inputs into separate utterances.
 - Demo code: General AOAI GPT `RAG` client to provide grounded responses as a fallback function.
-- Orchestrator: one routing option uses AOAI GPT function-calling to decide whether to call `CLU` or `CQA` runtimes.
+- Orchestrator: one routing option uses AOAI GPT function-calling to decide whether to call `CLU` or `CQA` runtimes, and another option that uses an intent routing agent with 'CLU' and 'CQA' as tools.
 
 **Sample Data:** This project includes sample data to create project dependencies. Sample data is in the context of a fictional outdoor product company: Contoso Outdoors.
 
 **Routing strategies:**
-- `BYPASS`: No routing. Only call fallback function.
+- 'TRIAGE_AGENT': Route to an intent routing agent that uses 'CLU' and 'CQA' as tools.
+- `FUNCTION_CALLING`: Route to either `CLU` or `CQA` runtime using AOAI GPT function-calling to decide.
 - `CLU`: Route to `CLU` runtime only.
 - `CQA`: Route to `CQA` runtime only.
-- `ORCHESTRATION`: Route to either `CQA` or `CLU` runtime using an Azure AI Language [Orchestration](https://learn.microsoft.com/en-us/azure/ai-services/language-service/orchestration-workflow/overview) project to decide. 
-- `FUNCTION_CALLING`: Route to either `CLU` or `CQA` runtime using AOAI GPT function-calling to decide.
+- `ORCHESTRATION`: Route to either `CQA` or `CLU` runtime using an Azure AI Language [Orchestration](https://learn.microsoft.com/en-us/azure/ai-services/language-service/orchestration-workflow/overview) project to decide.
+- BYPASS: No routing. Only call fallback function.
 
-In any case, the fallback function is called if routing "failed". `CLU` route is considered "failed" is confidence threshold is not met or no intent is recognized. `CQA` route is considered "failed" if confidence threhsold is not met or no answer is found. `ORCHESTRATION` and `FUNCTION_CALLING` routes depend on the return value of the runtime they call.
+In any case, the fallback function is called if routing "failed". `CLU` route is considered "failed" is confidence threshold is not met or no intent is recognized. `CQA` route is considered "failed" if confidence threhsold is not met or no answer is found. `TRIAGE_AGENT`, `FUNCTION_CALLING` and `ORCHESTRATION` route depend on the return value of the runtime they call.
 
 ## Getting Started
 
