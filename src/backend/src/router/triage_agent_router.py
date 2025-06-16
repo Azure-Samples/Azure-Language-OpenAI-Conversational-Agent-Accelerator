@@ -63,8 +63,9 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
 
             # Handle exceptions during agent run processing
             except Exception as e:
+                _logger.error(f"Logging error {e}")
                 error_return_value["error"] = e
-                _logger.warning(f"Agent run {attempt + 1} failed with exception: {e}. Retrying...")
+                _logger.error(f"Agent run {attempt + 1} failed with exception: {e}. Retrying...")
         
         # If all attempts fail, return the error
         return error_return_value
