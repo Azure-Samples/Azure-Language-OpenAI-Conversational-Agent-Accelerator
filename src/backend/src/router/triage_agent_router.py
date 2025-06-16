@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 import os
+import sys
 import json
 import logging
 import pii_redacter
@@ -10,6 +11,13 @@ from azure.ai.agents.models import ListSortOrder, AgentThread
 from router.clu_router import parse_response as parse_clu_response
 from router.cqa_router import parse_response as parse_cqa_response
 from utils import get_azure_credential
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    stream=sys.stdout
+)
 
 _logger = logging.getLogger(__name__)
 
