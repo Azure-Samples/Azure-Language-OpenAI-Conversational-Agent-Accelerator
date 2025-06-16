@@ -30,56 +30,6 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
     agent_id = os.environ.get("TRIAGE_AGENT_ID")
     agent = agents_client.get_agent(agent_id=agent_id)
 
-    def create_thread(utterance: str):
-        """
-        Helper function to create a thread for the agent run.
-        """
-        # Create thread for communication
-        thread = agents_client.threads.create()
-        _logger.info(f"Created thread, ID: {thread.id}")
-
-        # Create and add user message to thread
-        message = agents_client.messages.create(
-            thread_id=thread.id,
-            role="user",
-            content=utterance,
-        )
-        _logger.info(f"Created message: {message['id']}")
-        
-        return thread
-
-    def handle_successful_run(
-        thread: AgentThread, 
-        attempt: int
-    ) -> dict:
-        """
-        Helper function to handle a successful agent run
-        """
-        # Parse the agent response from the successful run
-        _logger.info(f"Agent run succeeded on attempt {attempt}.")
-        messages = agents_client.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)
-        for msg in messages:
-            # Grab the last text message from the assistant
-            if msg.text_messages and msg.role == "assistant":
-                last_text = msg.text_messages[-1]
-                _logger.info(f"{msg.role}: {last_text.text.value}")
-
-                # Load the agent response into a JSON
-                try:
-                    data = json.loads(last_text.text.value)
-                    _logger.info(f"Agent response parsed successfully: {data}")
-                    parsed_result = parse_response(data)
-                    return parsed_result
-                
-                # Raise error if agent response cannot be parsed
-                except Exception as e:
-                    _logger.error(f"Agent response failed with error: {e}")
-                    raise ValueError(f"Failed to parse agent response: {e}")
-                
-        # If no valid response found, raise an error to be handled by the caller
-        _logger.error("No valid agent response found in the thread.")
-        raise ValueError("No valid agent response found in the thread.")
-
     def triage_agent_router(
         utterance: str,
         language: str,
@@ -100,7 +50,7 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
         for attempt in range(1, max_retries + 1):
             try:
                 # Create thread for communication
-                thread = create_thread(utterance)
+                thread = create_thread(agents_client, utterance)
 
                 # Create and process the agent run
                 run = agents_client.runs.create_and_process(thread_id=thread.id, agent_id=agent.id)
@@ -109,8 +59,8 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
                 # Check the run status
                 if run.status == "completed":
                     # If run is successful, handle the response
-                    return handle_successful_run(thread, attempt)
-                
+                    return handle_successful_run(agents_client, thread, attempt)
+
             # Handle exceptions during agent run processing
             except Exception as e:
                 error_return_value["error"] = e
@@ -118,6 +68,63 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
         
         # If all attempts fail, return the error
         return error_return_value
+
+    return triage_agent_router
+
+
+def create_thread(
+    agents_client: AgentsClient,
+    utterance: str
+) -> AgentThread:
+    """
+    Helper function to create a thread for the agent run.
+    """
+    # Create thread for communication
+    thread = agents_client.threads.create()
+    _logger.info(f"Created thread, ID: {thread.id}")
+
+    # Create and add user message to thread
+    message = agents_client.messages.create(
+        thread_id=thread.id,
+        role="user",
+        content=utterance,
+    )
+    _logger.info(f"Created message: {message['id']}")
+    
+    return thread
+
+def handle_successful_run(
+    agents_client: AgentsClient,
+    thread: AgentThread, 
+    attempt: int
+) -> dict:
+    """
+    Helper function to handle a successful agent run
+    """
+    # Parse the agent response from the successful run
+    _logger.info(f"Agent run succeeded on attempt {attempt}.")
+    messages = agents_client.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)
+    for msg in messages:
+        # Grab the last text message from the assistant
+        if msg.text_messages and msg.role == "assistant":
+            last_text = msg.text_messages[-1]
+            _logger.info(f"{msg.role}: {last_text.text.value}")
+
+            # Load the agent response into a JSON
+            try:
+                data = json.loads(last_text.text.value)
+                _logger.info(f"Agent response parsed successfully: {data}")
+                parsed_result = parse_response(data)
+                return parsed_result
+            
+            # Raise error if agent response cannot be parsed
+            except Exception as e:
+                _logger.error(f"Agent response failed with error: {e}")
+                raise ValueError(f"Failed to parse agent response: {e}")
+            
+    # If no valid response found, raise an error to be handled by the caller
+    _logger.error("No valid agent response found in the thread.")
+    raise ValueError("No valid agent response found in the thread.")
 
 def parse_response(
     response: dict
