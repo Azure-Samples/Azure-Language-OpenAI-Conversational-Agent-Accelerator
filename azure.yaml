@@ -13,9 +13,8 @@ hooks:
     continueOnError: false
     interactive: true
   predeploy:
-    posix:
-      run: |
-        bash infra/scripts/predeploy_create_container.sh
+    run: |
+      bash infra/scripts/predeploy_create_container.sh
     shell: sh
     continueOnError: false
     interactive: true

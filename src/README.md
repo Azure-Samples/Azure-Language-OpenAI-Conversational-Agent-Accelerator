@@ -29,7 +29,6 @@ PII_CONFIDENCE_THRESHOLD=<pii-confidence-threshold> # float
 
 ROUTER_TYPE=<router-type> # BYPASS | CLU | CQA | ORCHESTRATION | FUNCTION_CALLING
 
-USE_MI_AUTH=<use-managed-identity-auth> # bool, false for local runs (run az login beforehand)
 MI_CLIENT_ID=<mi-client-id>
 ```
 

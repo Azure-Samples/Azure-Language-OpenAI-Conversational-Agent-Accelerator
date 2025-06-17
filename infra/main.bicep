@@ -116,7 +116,6 @@ output RG_NAME string = resourceGroup().name
 output RG_SUFFIX string = suffix
 
 // Managed Identity:
-output USE_MI_AUTH string = 'true'
 output MI_ID string = managed_identity.outputs.id
 output MI_CLIENT_ID string = managed_identity.outputs.client_id
 
@@ -146,7 +145,7 @@ output EMBEDDING_MODEL_DIMENSIONS string = string(ai_foundry.outputs.embedding_m
 
 // Agents:
 output AGENTS_PROJECT_ENDPOINT string = ai_foundry.outputs.agents_project_endpoint
-output MAX_AGENT_RETRY string = '3'
+output MAX_AGENT_RETRY string = '5'
 output DELETE_OLD_AGENTS string = 'true'
 
 // Search:

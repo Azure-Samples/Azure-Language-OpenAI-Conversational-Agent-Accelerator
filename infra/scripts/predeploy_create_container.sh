@@ -8,7 +8,7 @@ script_dir=$(dirname $(realpath "$0"))
 src_dir="${script_dir}/../../src"
 cd $src_dir
 
-source ${script_dir}/../.env
+source ${script_dir}/.env
 
 # Build docker image:
 repo="conv-agent"
@@ -39,7 +39,7 @@ result=$(az container create \
     --ip-address "Public" \
     --environment-variables \
         AGENTS_PROJECT_ENDPOINT=$AGENTS_PROJECT_ENDPOINT \
-        USE_MI_AUTH=$USE_MI_AUTH \
+        USE_MI_AUTH=true \
         MI_CLIENT_ID=$MI_CLIENT_ID \
         AOAI_ENDPOINT=$AOAI_ENDPOINT \
         AOAI_DEPLOYMENT=$AOAI_DEPLOYMENT \

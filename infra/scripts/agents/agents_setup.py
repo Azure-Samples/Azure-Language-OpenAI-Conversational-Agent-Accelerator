@@ -4,7 +4,7 @@ import json
 import os
 import re
 from azure.ai.agents import AgentsClient
-from azure.ai.agents.models import OpenApiTool, OpenApiManagedAuthDetails,OpenApiManagedSecurityScheme
+from azure.ai.agents.models import OpenApiTool, OpenApiManagedAuthDetails, OpenApiManagedSecurityScheme
 from azure.identity import DefaultAzureCredential
 
 config = {}
@@ -59,7 +59,7 @@ with open("openapi_specs/clu.json", "r") as f:
 clu_api_tool = OpenApiTool(
     name="clu_api",
     spec=clu_openapi_spec,
-    description= "An API to extract intent from a given message",
+    description="An API to extract intent from a given message",
     auth=auth
 )
 
@@ -71,7 +71,7 @@ with open("openapi_specs/cqa.json", "r") as f:
 cqa_api_tool = OpenApiTool(
     name="cqa_api",
     spec=cqa_openapi_spec,
-    description= "An API to get answer to questions related to business operation",
+    description="An API to get answer to questions related to business operation",
     auth=auth
 )
 
@@ -82,7 +82,7 @@ with agents_client:
 
     # Define the instructions for the agent
     instructions = """
-                You are a triage agent. Your goal is to answer questions and redirect message according to their intent. You have at your disposition 2 tools but can only use ONE:
+        You are a triage agent. Your goal is to answer questions and redirect message according to their intent. You have at your disposition 2 tools but can only use ONE:
         1. cqa_api: to answer customer questions such as procedures and FAQs.
         2. clu_api: to extract the intent of the message.
         You must use the ONE of the tools to perform your task. You should only use one tool at a time, and do NOT chain the tools together. Only if the tools are not able to provide the information, you can answer according to your general knowledge. You must return the full API response for either tool and ensure it's a valid JSON.
@@ -98,15 +98,14 @@ with agents_client:
     instructions = bind_parameters(instructions, config)
 
     if DELETE_OLD_AGENTS:
-        # List all existing agents
-        existing_agents = agents_client.list_agents()
-
-        # Delete all old agents with the same target name to avoid inconsistencies
-        for agent in existing_agents:
-            if agent.name == AGENT_NAME:
-                print(f"Deleting existing agent with ID: {agent.id}")
-                agents_client.delete_agent(agent.id)
-                print(f"Deleted agent with ID: {agent.id}")
+        # Delete all existing agents with the same target name:
+        to_delete = [
+            agent for agent in agents_client.list_agents() if agent.name == AGENT_NAME
+        ]
+        for agent in to_delete:
+            print(f"Deleting existing agent with ID: {agent.id}")
+            agents_client.delete_agent(agent.id)
+            print(f"Deleted agent with ID: {agent.id}")
 
     # Create the agent
     agent = agents_client.create_agent(
@@ -116,8 +115,7 @@ with agents_client:
         tools=cqa_api_tool.definitions + clu_api_tool.definitions
     )
 
-    print(f"Created agent, ID: {agent.id}")
+    print(f"Created agent with ID: {agent.id}")
 
     with open(ENV_FILE, 'a') as fp:
-        fp.write(f"TRIAGE_AGENT_ID={agent.id}")
-    
+        fp.write(f'\nexport TRIAGE_AGENT_ID="{agent.id}"\n')

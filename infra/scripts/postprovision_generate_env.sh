@@ -14,7 +14,6 @@ export LOCATION="$LOCATION"
 export RG_NAME="$RG_NAME"
 export RG_SUFFIX="$RG_SUFFIX"
 
-export USE_MI_AUTH="$USE_MI_AUTH"
 export MI_ID="$MI_ID"
 export MI_CLIENT_ID="$MI_CLIENT_ID"
 
