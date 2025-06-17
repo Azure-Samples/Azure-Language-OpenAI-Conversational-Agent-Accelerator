@@ -111,6 +111,7 @@ module role_assignments 'resources/role_assignments.bicep' = {
 //----------- Outputs -----------//
 
 // Resource Group:
+output SUBSCRIPTION string = subscription().subscriptionId
 output LOCATION string = resourceGroup().location
 output RG_NAME string = resourceGroup().name
 output RG_SUFFIX string = suffix
@@ -135,6 +136,9 @@ output ORCHESTRATION_CONFIDENCE_THRESHOLD string = '0.5'
 output PII_ENABLED string = 'true'
 output PII_CATEGORIES string = 'organization,person'
 output PII_CONFIDENCE_THRESHOLD string = '0.5'
+
+// AI Foundry:
+output AI_FOUNDRY_NAME string = ai_foundry.outputs.name
 
 // AOAI:
 output AOAI_ENDPOINT string = ai_foundry.outputs.openai_endpoint

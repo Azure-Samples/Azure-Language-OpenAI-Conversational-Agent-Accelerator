@@ -4,7 +4,13 @@ name: azure-language-openai-conversational-agent
 metadata:
   template: azure-language-openai-conversational-agent@1.0
 hooks:
-  # TODO: preprovision quota script:
+  preup:
+    run: |
+      source infra/scripts/preup_authenticate.sh
+      source infra/scripts/preup_customize_parameters.sh
+    shell: sh
+    continueOnError: false
+    interactive: true
   postprovision:
     run: |
       bash infra/scripts/postprovision_generate_env.sh
@@ -17,4 +23,10 @@ hooks:
       bash infra/scripts/predeploy_create_container.sh
     shell: sh
     continueOnError: false
+    interactive: true
+  postdown:
+    run: |
+      bash infra/scripts/postdown_purge_ai_foundry.sh
+    shell: sh
+    continueOnError: true
     interactive: true

@@ -1,4 +1,5 @@
 #!/bin/bash
+# `az login` should have been run before executing this script:
 
 declare -a regions=(
     "australiaeast"
@@ -26,6 +27,8 @@ declare -a models=(
 )
 
 declare -A valid_regions
+
+selected_subscription=${az account show --query name --output tsv}
 
 # Fetch quota information per region per model:
 for region in "${regions[@]}"; do
@@ -175,6 +178,7 @@ embedding_model_name=$(echo "$selected_embedding_model" | cut -d "." -f3)
 embedding_deployment_type=$(echo "$selected_embedding_model" | cut -d "." -f2)
 
 echo -e "\n--------------------------\nSummary:"
+echo "Subscription: $selected_subscription"
 echo "Region: $selected_region"
 echo "GPT model name: $gpt_model_name"
 echo "GPT model deployment type: $gpt_deployment_type"
@@ -193,4 +197,6 @@ export AZURE_ENV_EMBEDDING_MODEL_CAPACITY=$selected_embedding_quota
 export AZURE_ENV_EMBEDDING_MODEL_DEPLOYMENT_TYPE=$embedding_deployment_type
 
 echo -e "\nazd parameters set"
-echo "Ensure that you deploy to $selected_region when running: azd up"
+
+echo "Ensure that you select the following subscription: ${selected_subscription}"
+echo "Ensure that you select the following region: ${selected_region}"
