@@ -6,8 +6,14 @@ metadata:
 hooks:
   preup:
     run: |
-      source infra/scripts/preup_authenticate.sh
-      source infra/scripts/preup_customize_parameters.sh
+      . infra/scripts/preup_authenticate.sh
+      . infra/scripts/preup_customize_parameters.sh
+    shell: sh
+    continueOnError: false
+    interactive: true
+  preprovision:
+    run: |
+      bash infra/scripts/preprovision_validate_parameters.sh
     shell: sh
     continueOnError: false
     interactive: true

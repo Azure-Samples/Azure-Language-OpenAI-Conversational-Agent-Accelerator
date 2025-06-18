@@ -11,6 +11,8 @@ cd $src_dir
 source ${script_dir}/.env
 
 # Build docker image:
+echo "Pre-deploy: building app image..."
+
 repo="conv-agent"
 image="app"
 tag=$(date '+%Y%m%d-%H%M')
@@ -18,14 +20,18 @@ tag=$(date '+%Y%m%d-%H%M')
 docker build . -t ${ACR_NAME}.azurecr.io/${repo}/${image}:${tag}
 
 # Push image to ACR:
+echo "Pre-deploy: pushing image to acr..."
+
 az acr login --name ${ACR_NAME}
 docker push ${ACR_NAME}.azurecr.io/${repo}/${image}:${tag}
 
 # Create container instance:
+echo "Pre-deploy: creating container instance..."
+
 result=$(az container create \
     --resource-group ${RG_NAME} \
     --name "citest-${RG_SUFFIX}" \
-    --location ${LOCATION} \
+    --location ${RG_LOCATION} \
     --image ${ACR_NAME}.azurecr.io/${repo}/${image}:${tag} \
     --assign-identity ${MI_ID} \
     --acr-identity ${MI_ID} \
@@ -73,3 +79,5 @@ result=$(az container create \
 fqdn=$(echo "$result" | grep -m1 '"fqdn": ' "-" | awk '{print $2 }' | tr -d ',"')
 
 echo -e "\nWeb-App URL: ${fqdn}"
+
+echo "Pre-deploy: container instance spawned"

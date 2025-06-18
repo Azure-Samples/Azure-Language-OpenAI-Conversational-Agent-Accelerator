@@ -111,8 +111,8 @@ module role_assignments 'resources/role_assignments.bicep' = {
 //----------- Outputs -----------//
 
 // Resource Group:
-output SUBSCRIPTION string = subscription().subscriptionId
-output LOCATION string = resourceGroup().location
+output RG_SUBSCRIPTION_ID string = subscription().subscriptionId
+output RG_LOCATION string = resourceGroup().location
 output RG_NAME string = resourceGroup().name
 output RG_SUFFIX string = suffix
 

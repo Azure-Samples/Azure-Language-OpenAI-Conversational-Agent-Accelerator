@@ -1,4 +1,5 @@
 #!/bin/bash
+# `az login` should have been run before executing this script:
 
 set -e
 

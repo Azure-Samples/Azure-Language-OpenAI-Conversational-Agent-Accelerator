@@ -9,7 +9,7 @@ cd ${script_dir}
 
 source ${script_dir}/.env
 
-echo "Running post-provision setup scripts..."
+echo "Post-provision: running setup scripts..."
 
 bash language/run_language_setup.sh
 bash search/run_search_setup.sh
@@ -17,4 +17,4 @@ bash agents/run_agents_setup.sh
 
 cd ${cwd}
 
-echo "Post-provision setup scripts complete"
+echo "Post-provision: setup scripts complete"

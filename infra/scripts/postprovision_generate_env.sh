@@ -7,11 +7,11 @@ cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}/..
 
-echo "Generating .env file..."
+echo "Post-provision: generating .env file..."
 
 cat << EOF > .env
-export SUBSCRIPTION="$SUBSCRIPTION"
-export LOCATION="$LOCATION"
+export RG_SUBSCRIPTION_ID="$RG_SUBSCRIPTION_ID"
+export RG_LOCATION="$RG_LOCATION"
 export RG_NAME="$RG_NAME"
 export RG_SUFFIX="$RG_SUFFIX"
 
@@ -60,4 +60,4 @@ EOF
 
 cd ${cwd}
 
-echo ".env file generated"
+echo "Post-provision: .env file generated"

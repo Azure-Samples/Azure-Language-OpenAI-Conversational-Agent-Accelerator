@@ -7,10 +7,10 @@ cd ${script_dir}
 
 source ${script_dir}/.env
 
-echo "Purging AI Foundry resource..."
+echo "Post-down: purging AI Foundry resource..."
 
-az resource delete --ids /subscriptions/${SUBSCRIPTION}/providers/Microsoft.CognitiveServices/locations/${LOCATION}/resourceGroups/${RG_NAME}/deletedAccounts/${AI_FOUNDRY_NAME}
+az resource delete --ids /subscriptions/${RG_SUBSCRIPTION_ID}/providers/Microsoft.CognitiveServices/locations/${RG_LOCATION}/resourceGroups/${RG_NAME}/deletedAccounts/${AI_FOUNDRY_NAME}
 
 cd ${cwd}
 
-echo "Post-down AI Foundry resource purged"
+echo "Post-down: AI Foundry resource purged"
