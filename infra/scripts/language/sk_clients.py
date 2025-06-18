@@ -101,6 +101,7 @@ class SelectionStrategy(SequentialSelectionStrategy):
                     print("Realizing intent from CLU result")
                     intent = parsed["response"]["result"]["prediction"]["topIntent"]
                     print("intent:", intent)
+                    print("Passing to head agent")
                     return next((agent for agent in agents if agent.name == "HeadSupportAgent"), None)
             except Exception:
                 return None
@@ -108,10 +109,10 @@ class SelectionStrategy(SequentialSelectionStrategy):
         elif last.name == "HeadSupportAgent":
             print("Last message is from HeadSupportAgent, checking content...")
             try:
-
                 parsed = json.loads(last.content)
                 print("Parsed content:", parsed)
                 route = parsed.get("target_agent")
+                print("Route to custom agent:", route)
                 return next((a for a in agents if a.name == route), None)
             except Exception:
                 return None
@@ -130,25 +131,14 @@ class ApprovalStrategy(TerminationStrategy):
         """
         last = history[-1] if history else None
 
-        
         if not last:
             return False
         
-        if last.name == "TriageAgent":
-            try:
-                parsed = json.loads(last.content)
-                return parsed.get("type") == "cqa_result"
-            except Exception:
-                return False
-            
-        # If the last message is from the custom action agent, terminate
-        if last.role == AuthorRole.ASSISTANT and last.name != "TriageAgent" and last.name != "HeadSupportAgent":
-            try:
-                parsed = json.loads(last.content)
-                return parsed
-            except Exception:
-                return False
-        return False
+        try:
+            parsed = json.loads(last.content)
+            return parsed.get("terminated") is True
+        except Exception:
+            return False
 
 # sample reference for creating an Azure AI agent
 async def main():
@@ -158,127 +148,127 @@ async def main():
         AzureAIAgent.create_client(credential=creds, endpoint=PROJECT_ENDPOINT) as client,
     ):
         # order status agent
-        order_status_agent_definition = await client.agents.create_agent(
-            model=ai_agent_settings.model_deployment_name,
-            name="OrderStatusAgent",
-            instructions="You are a customer support agent that checks order status. You must use the OrderStatusPlugin to check the status of an order.",
-        )
+        # order_status_agent_definition = await client.agents.create_agent(
+        #     model=ai_agent_settings.model_deployment_name,
+        #     name="OrderStatusAgent",
+        #     instructions="""You are a customer support agent that checks order status. You must use the OrderStatusPlugin to check the status of an order.
+        #     You must return the response in the following format:
+        #     {
+        #         "response": "<OrderStatusResponse>",
+        #         "terminated": true
+        #     }""",
+        # )
 
-        order_status_agent = AzureAIAgent(
-            client=client,
-            definition=order_status_agent_definition,
-            description="An agent that checks order status",
-            plugins=[OrderStatusPlugin()],
-        )
+        # order_status_agent = AzureAIAgent(
+        #     client=client,
+        #     definition=order_status_agent_definition,
+        #     description="An agent that checks order status",
+        #     plugins=[OrderStatusPlugin()],
+        # )
 
-        # order return agent
-        order_return_agent_definition = await client.agents.create_agent(
-            model=ai_agent_settings.model_deployment_name,
-            name="OrderReturnAgent",
-            instructions="You are a customer support agent that handles order returns. You must use the OrderReturnPlugin to handle order return requests.",
-        )
+        # # order return agent
+        # order_return_agent_definition = await client.agents.create_agent(
+        #     model=ai_agent_settings.model_deployment_name,
+        #     name="OrderReturnAgent",
+        #     instructions="""You are a customer support agent that handles order returns. You must use the OrderReturnPlugin to handle order return requests.
+        #     You must return the response in the following format:
+        #     {
+        #         "response": "<OrderReturnResponse>",
+        #         "terminated": true
+        #     }""",
+        # )
 
-        order_return_agent = AzureAIAgent(
-            client=client,
-            definition=order_return_agent_definition,
-            description="An agent that checks on returns",
-            plugins=[OrderReturnPlugin()],
-        )
+        # order_return_agent = AzureAIAgent(
+        #     client=client,
+        #     definition=order_return_agent_definition,
+        #     description="An agent that checks on returns",
+        #     plugins=[OrderReturnPlugin()],
+        # )
 
-        # order refund agent
-        order_refund_agent_definition = await client.agents.create_agent(
-            model=ai_agent_settings.model_deployment_name,
-            name="OrderRefundAgent",
-            instructions="You are a customer support agent that handles order refunds. You must use the OrderRefundPlugin to handle order refund requests.",
-        )
+        # # order refund agent
+        # order_refund_agent_definition = await client.agents.create_agent(
+        #     model=ai_agent_settings.model_deployment_name,
+        #     name="OrderRefundAgent",
+        #     instructions="""You are a customer support agent that handles order refunds. You must use the OrderRefundPlugin to handle order refund requests.
+        #     You must return the response in the following format:
+        #     {
+        #         "response": "<OrderRefundResponse>",
+        #         "terminated": True
+        #     }""",
+        # )
 
-        order_refund_agent = AzureAIAgent(
-            client=client,
-            definition=order_refund_agent_definition,
-            description="An agent that checks on refunds",
-            plugins=[OrderRefundPlugin()],
-        )
+        # order_refund_agent = AzureAIAgent(
+        #     client=client,
+        #     definition=order_refund_agent_definition,
+        #     description="An agent that checks on refunds",
+        #     plugins=[OrderRefundPlugin()],
+        # )
 
-        # discount agent
-        discount_agent_definition = await client.agents.create_agent(
-            model=ai_agent_settings.model_deployment_name,
-            name="DiscountAgent",
-            instructions="You are a customer support agent that handles discount requests. You must use the OrderDiscountPlugin to handle discount requests.",
-        )
+        # print("Order status agent id: ", order_status_agent.id)
+        # print("Order refund agent id: ", order_refund_agent.id)
+        # print("Order return agent id: ", order_return_agent.id)
 
-        discount_agent = AzureAIAgent(
-            client=client,
-            definition=discount_agent_definition,
-            description="An agent that checks on discounts",
-            plugins=[OrderDiscountPlugin()],
-        )
+        # # triage agent tools
+        # clu_api_tool, cqa_api_tool = create_tools(config)
 
-        print("Order status agent id: ", order_status_agent.id)
-        print("Order refund agent id: ", order_refund_agent.id)
-        print("Order return agent id: ", order_return_agent.id)
-        print("Discount agent id: ", discount_agent.id)
+        # triage_agent_definition = await client.agents.create_agent(
+        #     model=ai_agent_settings.model_deployment_name,
+        #     name="TriageAgent",
+        #     instructions="""
+        #     You are a triage agent. Your goal is to answer questions and redirect message according to their intent. You have at your disposition 2 tools but can only use ONE:
+        #     1. cqa_api: to answer customer questions such as procedures and FAQs.
+        #     2. clu_api: to extract the intent of the message.
+        #     - The API version must be "2023-04-01"
+        #     You must use the ONE of the tools to perform your task. You should only use one tool at a time, and do NOT chain the tools together. Only if the tools are not able to provide the information, you can answer according to your general knowledge. You must return the full API response for either tool and ensure it's a valid JSON.
+        #     - When you return answers from the clu_api, format the response as JSON: {"type": "clu_result", "response": {clu_response}, "terminated": False}, where clu_response is the full JSON API response from the clu_api without rewriting or removing any info.   Return immediately. Do not call the cqa_api afterwards.
+        #     This is extremeley critical - to call the clu_api, the following parameters values MUST be used in the payload:
+        #         - 'api-version': must be "2023-04-01"
+        #         - 'projectName': value must be 'conv-assistant-clu'
+        #         - 'deploymentName': value must be 'clu-m1-d1'
+        #         - 'text': must be the input from the user.
+        #     - When you return answers from the cqa_api, format the response as JSON: {"type": "cqa_result", "response": {cqa_response}, "terminated": True} where cqa_response is the full JSON API response from the cqa_api without rewriting or removing any info. Return immediately
+        #     """,
+        #     tools=clu_api_tool.definitions + cqa_api_tool.definitions,
+        # )
 
-        # triage agent tools
-        clu_api_tool, cqa_api_tool = create_tools(config)
+        # triage_agent = AzureAIAgent(
+        #     client=client,
+        #     definition=triage_agent_definition,
+        #     description="A customer support agent that chooses between CLU and CQA APIs to answer customer questions and returns API response",
+        # )
 
-        triage_agent_definition = await client.agents.create_agent(
-            model=ai_agent_settings.model_deployment_name,
-            name="TriageAgent",
-            instructions="""
-            You are a triage agent. Your goal is to answer questions and redirect message according to their intent. You have at your disposition 2 tools but can only use ONE:
-            1. cqa_api: to answer customer questions such as procedures and FAQs.
-            2. clu_api: to extract the intent of the message.
-            - The API version must be "2023-04-01"
-            You must use the ONE of the tools to perform your task. You should only use one tool at a time, and do NOT chain the tools together. Only if the tools are not able to provide the information, you can answer according to your general knowledge. You must return the full API response for either tool and ensure it's a valid JSON.
-            - When you return answers from the clu_api, format the response as JSON: {"type": "clu_result", "response": {clu_response}}, where clu_response is the full JSON API response from the clu_api without rewriting or removing any info.   Return immediately. Do not call the cqa_api afterwards.
-            This is extremeley critical - to call the clu_api, the following parameters values MUST be used in the payload:
-                - 'api-version': must be "2023-04-01"
-                - 'projectName': value must be 'conv-assistant-clu'
-                - 'deploymentName': value must be 'clu-m1-d1'
-                - 'text': must be the input from the user.
-            - When you return answers from the cqa_api, format the response as JSON: {"type": "cqa_result", "response": {cqa_response}} where cqa_response is the full JSON API response from the cqa_api without rewriting or removing any info. Return immediately
-            """,
-            tools=clu_api_tool.definitions + cqa_api_tool.definitions,
-        )
+        # # print("Triage agent id: ", triage_agent.id)
 
-        triage_agent = AzureAIAgent(
-            client=client,
-            definition=triage_agent_definition,
-            description="A customer support agent that chooses between CLU and CQA APIs to answer customer questions and returns API response",
-        )
+        # # # Create Head Support Agent in AI Foundry
+        # head_support_agent_definition = await client.agents.create_agent(
+        #     model=ai_agent_settings.model_deployment_name,
+        #     name="HeadSupportAgent",
+        #     instructions="""
+        #         You are a head support agent that routes inquiries to the proper custom agent based on the provided intent and entities from the triage agent.
+        #         You must choose between the following agents:
+        #         - OrderStatusAgent: for order status inquiries
+        #         - OrderReturnAgent: for order return inquiries
+        #         - OrderRefundAgent: for order refund inquiries
 
-        # print("Triage agent id: ", triage_agent.id)
+        #         You must return the response in the following format:
+        #         {
+        #           "target_agent": "<AgentName>",
+        #           "intent": "<IntentName>",
+        #           "entities": [<List of extracted entities>]
+        #         }
 
-        # # Create Head Support Agent in AI Foundry
-        head_support_agent_definition = await client.agents.create_agent(
-            model=ai_agent_settings.model_deployment_name,
-            name="HeadSupportAgent",
-            instructions="""
-                You are a head support agent that routes inquiries to the proper custom agent based on the provided intent and entities from the triage agent.
-                You must choose between the following agents:
-                - OrderStatusAgent: for order status inquiries
-                - OrderReturnAgent: for order return inquiries
-                - OrderRefundAgent: for order refund inquiries
+        #         Where:
+        #         - "target_agent" is the name of the agent you are routing to (must match one of the agent names above).
+        #         - "intent" is the top-level intent extracted from the CLU result.
+        #         - "entities" is a list of all entities extracted from the CLU result, including their category and value.
+        #         """,
+        # )
 
-                You must return the response in the following format:
-                {
-                  "target_agent": "<AgentName>",
-                  "intent": "<IntentName>",
-                  "entities": [<List of extracted entities>]
-                }
-
-                Where:
-                - "target_agent" is the name of the agent you are routing to (must match one of the agent names above).
-                - "intent" is the top-level intent extracted from the CLU result.
-                - "entities" is a list of all entities extracted from the CLU result, including their category and value.
-                """,
-        )
-
-        head_support_agent = AzureAIAgent(
-            client=client,
-            definition=head_support_agent_definition,
-            description="A head support agent that routes inquiries to the proper custom agent",
-        )
+        # head_support_agent = AzureAIAgent(
+        #     client=client,
+        #     definition=head_support_agent_definition,
+        #     description="A head support agent that routes inquiries to the proper custom agent",
+        # )
 
         # # Collect agent IDs in a dictionary
         # agent_ids = {
@@ -293,49 +283,49 @@ async def main():
         # print(json.dumps(agent_ids, indent=4))
 
         # Get the agents from these agent IDs
-        # agent_ids = {
-        #     "TRIAGE_AGENT_ID": "asst_31QWBk0AwrrWCO9tClboNbfj",
-        #     "ORDER_STATUS_AGENT_ID": "asst_bkM9nI8gUHzkfg92CiW2q5el",
-        #     "ORDER_RETURN_AGENT_ID": "asst_Dvth91yrpJObvQl8omGtRX5J",
-        #     "ORDER_REFUND_AGENT_ID": "asst_m8i4MEEWpw0rT4Reo7iZbtuz",
-        #     # "HEAD_SUPPORT_AGENT_ID": "asst_NN8wGHOTeYdLMLgsj6rVid0Q"
-        # }
+        agent_ids = {
+            "TRIAGE_AGENT_ID": "asst_VnmEjOwWbiPjhvnMBwgznppW",
+            "ORDER_STATUS_AGENT_ID": "asst_aEWmybkdV624MhurTxTeKfYn",
+            "ORDER_RETURN_AGENT_ID": "asst_P9QyAickP7zkw4xW7b95eWdf",
+            "ORDER_REFUND_AGENT_ID": "asst_7xBrY9qa6Gl2udmuw7x0zDlm",
+            "HEAD_SUPPORT_AGENT_ID": "asst_c3WOZzwVVElkbcFk3hfnr5ml"
+        }
 
-        # # grab the agents from the agent IDs
-        # triage_agent_definition = await client.agents.get_agent(agent_ids["TRIAGE_AGENT_ID"])
-        # triage_agent = AzureAIAgent(
-        #     client=client,
-        #     definition=triage_agent_definition,
-        #     description="A customer support agent that chooses between CLU and CQA APIs to answer customer questions and returns API response. The CLU API version must be '2023-04-10'",
-        # )
+        # grab the agents from the agent IDs
+        triage_agent_definition = await client.agents.get_agent(agent_ids["TRIAGE_AGENT_ID"])
+        triage_agent = AzureAIAgent(
+            client=client,
+            definition=triage_agent_definition,
+            description="A customer support agent that chooses between CLU and CQA APIs to answer customer questions and returns API response. The CLU API version must be '2023-04-10'",
+        )
 
-        # order_status_agent_definition = await client.agents.get_agent(agent_ids["ORDER_STATUS_AGENT_ID"])
-        # order_status_agent = AzureAIAgent(
-        #     client=client,
-        #     definition=order_status_agent_definition,
-        #     description="An agent that checks order status",
-        #     plugins=[OrderStatusPlugin()],
-        # )
-        # order_return_agent_definition = await client.agents.get_agent(agent_ids["ORDER_RETURN_AGENT_ID"])
-        # order_return_agent = AzureAIAgent(
-        #     client=client,
-        #     definition=order_return_agent_definition,
-        #     description="An agent that checks on returns",
-        #     plugins=[OrderReturnPlugin()],
-        # )
-        # order_refund_agent_definition = await client.agents.get_agent(agent_ids["ORDER_REFUND_AGENT_ID"])
-        # order_refund_agent = AzureAIAgent(
-        #     client=client,
-        #     definition=order_refund_agent_definition,
-        #     description="An agent that checks on refunds",
-        #     plugins=[OrderRefundPlugin()],
-        # )
-        # head_support_agent_definition = await client.agents.get_agent(agent_ids["HEAD_SUPPORT_AGENT_ID"])
-        # head_support_agent = AzureAIAgent(
-        #     client=client,
-        #     definition=head_support_agent_definition,
-        #     description="A head support agent that routes inquiries to the proper custom agent",
-        # )
+        order_status_agent_definition = await client.agents.get_agent(agent_ids["ORDER_STATUS_AGENT_ID"])
+        order_status_agent = AzureAIAgent(
+            client=client,
+            definition=order_status_agent_definition,
+            description="An agent that checks order status",
+            plugins=[OrderStatusPlugin()],
+        )
+        order_return_agent_definition = await client.agents.get_agent(agent_ids["ORDER_RETURN_AGENT_ID"])
+        order_return_agent = AzureAIAgent(
+            client=client,
+            definition=order_return_agent_definition,
+            description="An agent that checks on returns",
+            plugins=[OrderReturnPlugin()],
+        )
+        order_refund_agent_definition = await client.agents.get_agent(agent_ids["ORDER_REFUND_AGENT_ID"])
+        order_refund_agent = AzureAIAgent(
+            client=client,
+            definition=order_refund_agent_definition,
+            description="An agent that checks on refunds",
+            plugins=[OrderRefundPlugin()],
+        )
+        head_support_agent_definition = await client.agents.get_agent(agent_ids["HEAD_SUPPORT_AGENT_ID"])
+        head_support_agent = AzureAIAgent(
+            client=client,
+            definition=head_support_agent_definition,
+            description="A head support agent that routes inquiries to the proper custom agent",
+        )
 
         # create the agent group chat with all of the agents
         agent_group_chat = AgentGroupChat(
@@ -359,7 +349,7 @@ async def main():
         print("Agent group chat created successfully.")
 
         # Process message
-        user_msg = ChatMessageContent(role=AuthorRole.USER, content="What is the status of order 123?")
+        user_msg = ChatMessageContent(role=AuthorRole.USER, content="I want to refund order 12387 because it was too small")
         await asyncio.sleep(5) # Wait to reduce TPM
         print(f"\nReady to process user message: {user_msg.content}\n")
 
@@ -381,9 +371,6 @@ async def main():
             print(f"Error during chat invocation: {e}")
 
 
-
-        
-
         # runtime = InProcessRuntime()
         # runtime.start()
 
@@ -403,4 +390,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    print("Agent setup completed successfully.")
+    print("Agent groupchat completed successfully.")
