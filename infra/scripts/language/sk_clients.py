@@ -119,6 +119,7 @@ class SelectionStrategy(SequentialSelectionStrategy):
 
         return None
     
+
 class ApprovalStrategy(TerminationStrategy):
     """
     Custom termination strategy that ends the chat if it's from the custom action agent 
@@ -190,7 +191,7 @@ async def create_agents(client, ai_agent_settings, config):
     You must return the response in the following format:
     {
         "response": "<OrderStatusResponse>",
-        "terminated": true
+        "terminated": True
     }""",
     )
 
@@ -209,7 +210,7 @@ async def create_agents(client, ai_agent_settings, config):
     You must return the response in the following format:
     {
         "response": "<OrderReturnResponse>",
-        "terminated": true
+        "terminated": True
     }""",
     )
 
@@ -283,7 +284,8 @@ async def create_agents(client, ai_agent_settings, config):
         {
           "target_agent": "<AgentName>",
           "intent": "<IntentName>",
-          "entities": [<List of extracted entities>]
+          "entities": [<List of extracted entities>],
+          "terminated": False
         }
 
         Where:
@@ -299,6 +301,17 @@ async def create_agents(client, ai_agent_settings, config):
     description="A head support agent that routes inquiries to the proper custom agent",
     )
 
+    agent_ids = {
+            "TRIAGE_AGENT_ID": triage_agent_definition.id,
+            "ORDER_STATUS_AGENT_ID": order_status_agent_definition.id,
+            "ORDER_RETURN_AGENT_ID": order_return_agent_definition.id,
+            "ORDER_REFUND_AGENT_ID": order_refund_agent_definition.id,
+            "HEAD_SUPPORT_AGENT_ID": head_support_agent_definition.id,
+        }
+
+    # Output the agent IDs as JSON
+    print(json.dumps(agent_ids, indent=4))
+
     return triage_agent, head_support_agent, order_status_agent, order_return_agent, order_refund_agent
         
 # sample reference for creating an Azure AI agent
@@ -308,7 +321,7 @@ async def main():
         DefaultAzureCredential() as creds,
         AzureAIAgent.create_client(credential=creds, endpoint=PROJECT_ENDPOINT) as client,
     ):
-        CREATE_NEW_AGENTS = False
+        CREATE_NEW_AGENTS = True
 
         if CREATE_NEW_AGENTS:
             print("Creating new agents...")
@@ -348,7 +361,7 @@ async def main():
         print("Agent group chat created successfully.")
 
         # Process message
-        user_msg = ChatMessageContent(role=AuthorRole.USER, content="i want to refund order 129873")
+        user_msg = ChatMessageContent(role=AuthorRole.USER, content="what's the status of order 1234")
         await asyncio.sleep(5) # Wait to reduce TPM
         print(f"\nReady to process user message: {user_msg.content}\n")
 
