@@ -6,7 +6,6 @@ metadata:
 hooks:
   preup:
     run: |
-      . infra/scripts/preup_authenticate.sh
       chmod u+r+x ./infra/scripts/preup_customize_parameters.sh; ./infra/scripts/preup_customize_parameters.sh
     shell: sh
     continueOnError: false

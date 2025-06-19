@@ -212,16 +212,20 @@ python -m venv <virtual-env-name>
 source <virtual-env-name>/bin/activate
 ```
 
-1. Provision and deploy all the resources:
+1. Login to Azure (ensure you select the account and subscription you are deploying resources to):
+    ```shell
+    az login
+    azd auth login
+    ```
+2. Provision and deploy all the resources:
 
     ```shell
     azd up
     ```
-2. First, you will be prompted to login to Azure. Ensure you select the account and subscription you are deploying resources to. You will need to login to `Azure CLI` and `Azure Developer CLI`.
 3. Now, you will be prompted to select deployment parameters, such as which models to deploy and with what capacity. Follow the prompts to select your customized parameters.
 4. Next, follow the `azd` prompts:
     - Provide an `azd` environment name (like "conv-agent").
-    - Select the *same* subscription and region you selected earlier during parameter customization.
+    - Select the *same* subscription and region you selected earlier during `az login`.
     - Either select an existing resource group, or create a new one.
     - Provisioning resources will take *5-15 minutes*.
       > **Tip:** A link to view the deployment's detailed progress in the Azure Portal shows up in your terminal window. You can open this link to see the deployment progress and go to the resource group.

@@ -23,6 +23,8 @@ read -p "$prompt" user_response
 
 if [ "$user_response" = "y" ]; then
     echo "Skipping parameter customization..."
+    touch .env
+    cd ${cwd}
     exit 0
 fi
 
@@ -225,7 +227,6 @@ done
 
 # Fetch summary:
 selected_subscription=$(az account show --query name --output tsv)
-selected_subscription_id=$(az account show --query id --output tsv)
 
 gpt_model_name=$(echo "$selected_gpt_model" | cut -d "." -f3)
 gpt_deployment_type=$(echo "$selected_gpt_model" | cut -d "." -f2)
@@ -246,7 +247,6 @@ echo "Embedding model capacity: $selected_embedding_quota"
 
 # Set AZD env variables:
 cat << EOF > .env
-export AZURE_ENV_SUBSCRIPTION_ID="$selected_subscription_id"
 export AZURE_ENV_LOCATION="$selected_region"
 
 export AZURE_ENV_ROUTER_TYPE="$selected_router_type"

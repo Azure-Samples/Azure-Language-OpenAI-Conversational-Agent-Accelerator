@@ -1,4 +1,5 @@
 #!/bin/bash
+# `az login` should have been run before executing this script:
 
 set -e
 
@@ -16,14 +17,16 @@ source .env
 
 echo "Pre-provision: validating parameters..."
 
-if [ "$AZURE_ENV_SUBSCRIPTION_ID" != "$AZURE_SUBSCRIPTION_ID" ]; then
+selected_subscription_id=$(az account show --query id --output tsv)
+
+if [ "$selected_subscription_id" != "$AZURE_SUBSCRIPTION_ID" ]; then
     echo "Subscription selected during authentication does NOT match subscription selected in azd"
-    echo "$AZURE_ENV_SUBSCRIPTION_ID != $AZURE_SUBSCRIPTION_ID"
+    echo "$selected_subscription_id != $AZURE_SUBSCRIPTION_ID"
     echo "Aborting..."
     exit 1
 fi
 
-if [ "$AZURE_ENV_LOCATION" != "$AZURE_LOCATION" ]; then
+if [ -n "$AZURE_ENV_LOCATION" ] && [ "$AZURE_ENV_LOCATION" != "$AZURE_LOCATION" ]; then
     echo "Region selected during parameter customization does NOT match region selected in azd"
     echo "$AZURE_ENV_LOCATION != $AZURE_LOCATION"
     echo "Aborting..."
