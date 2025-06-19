@@ -13,7 +13,6 @@ hooks:
   preprovision:
     run: |
       bash infra/scripts/preprovision_validate_parameters.sh
-      . infra/scripts/.env
     shell: sh
     continueOnError: false
     interactive: true

@@ -9,7 +9,7 @@ cd ${script_dir}
 
 echo "Post-provision: populating .env file..."
 
-cat << EOF >> .env
+cat << EOF > ${script_dir}/.env
 export RG_SUBSCRIPTION_ID="$RG_SUBSCRIPTION_ID"
 export RG_LOCATION="$RG_LOCATION"
 export RG_NAME="$RG_NAME"
@@ -56,7 +56,6 @@ export BLOB_CONTAINER_NAME="$BLOB_CONTAINER_NAME"
 export ACR_NAME="$ACR_NAME"
 
 export ROUTER_TYPE="$ROUTER_TYPE"
-
 EOF
 
 cd ${cwd}

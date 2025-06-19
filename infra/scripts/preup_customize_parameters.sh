@@ -3,76 +3,50 @@
 
 set -e
 
-if [ "$IS_GITHUB_WORKFLOW_RUN" = "true" ]; then
-    # Skip parameter customization during GitHub workflow run:
-    echo "Pre-up: skipping parameter customization..."
-    exit 0
-fi
-
 cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}
 
 selected_subscription=$(az account show --query name --output tsv)
+model_region=""
+
+if [ "$IS_GITHUB_WORKFLOW_RUN" = "true" ]; then
+    # Skip parameter customization during GitHub workflow run:
+    echo "Pre-up: using configured workflow variables..."
+    generate_parameters
+    cd ${cwd}
+    exit 0
+fi
 
 function print_summary {
     echo -e "--------------------------\nSUMMARY:"
     echo "Subscription: $selected_subscription"
     echo "Region: $MODEL_LOCATION"
-    echo "Router type: $AZD_PARAM_ROUTER_TYPE"
-    echo "GPT model name: $AZD_PARAM_GPT_MODEL_NAME"
-    echo "GPT model deployment type: $AZD_PARAM_GPT_MODEL_DEPLOYMENT_TYPE"
-    echo "GPT model capacity: $AZD_PARAM_GPT_MODEL_CAPACITY"
-    echo "Embedding model name: $AZD_PARAM_EMBEDDING_MODEL_NAME"
-    echo "Embedding model deployment type: $AZD_PARAM_EMBEDDING_MODEL_DEPLOYMENT_TYPE"
-    echo "Embedding model capacity: $AZD_PARAM_EMBEDDING_MODEL_CAPACITY"
+    echo "Parameters:"
+    cat ${script_dir}/../parameters.json
 
-    echo -e "\nENSURE THAT YOU SELECT THE FOLLOWING SUBSCRIPTION: ${selected_subscription}"
-    echo "ENSURE THAT YOU SELECT THE FOLLOWING REGION: ${MODEL_LOCATION}"
+    echo "ENSURE THAT YOU SELECT THE FOLLOWING SUBSCRIPTION: ${selected_subscription}"
+    echo "ENSURE THAT YOU SELECT THE FOLLOWING REGION: ${model_region}"
 }
 
-function generate_env {
-    cat << EOF > .env
-    export AZD_PARAM_ROUTER_TYPE="$selected_router_type"
-    export AZD_PARAM_GPT_MODEL_NAME="$gpt_model_name"
-    export AZD_PARAM_GPT_MODEL_DEPLOYMENT_TYPE="$gpt_deployment_type"
-    export AZD_PARAM_GPT_MODEL_CAPACITY="$selected_gpt_quota"
-    export AZD_PARAM_EMBEDDING_MODEL_NAME="$embedding_model_name"
-    export AZD_PARAM_EMBEDDING_MODEL_DEPLOYMENT_TYPE="$embedding_deployment_type"
-    export AZD_PARAM_EMBEDDING_MODEL_CAPACITY="$selected_embedding_quota"
-
-    export MODEL_LOCATION="$selected_region"
-
+function generate_parameters {
+    cat << EOF > ${script_dir}/../parameters.json
+{
+    "router_type": "$AZD_PARAM_ROUTER_TYPE",
+    "gpt_model_name": "$AZD_PARAM_GPT_MODEL_NAME",
+    "gpt_model_deployment_type": "$AZD_PARAM_GPT_MODEL_DEPLOYMENT_TYPE",
+    "gpt_model_capacity": "$AZD_PARAM_GPT_MODEL_CAPACITY",
+    "embedding_model_name": "$AZD_PARAM_EMBEDDING_MODEL_NAME",
+    "embedding_model_deployment_type": "$AZD_PARAM_EMBEDDING_MODEL_DEPLOYMENT_TYPE",
+    "embedding_model_capacity": "$AZD_PARAM_EMBEDDING_MODEL_CAPACITY",
+    "model_region": "$model_region"
+}
 EOF
 }
 
-# DEFAULT VALUES:
-selected_region=""
-selected_router_type="TRIAGE_AGENT"
-gpt_model_name="gpt-4o-mini"
-gpt_deployment_type="GlobalStandard"
-selected_gpt_quota="100"
-embedding_model_name="text-embedding-ada-002"
-embedding_deployment_type="GlobalStandard"
-selected_embedding_quota="100"
-
-skip="false"
-if [ -e ".env" ]; then
-    read -p "Pre-up: .env file exists. Would you like to skip parameter customization and use the values found in .env? (y/n): " user_response
-    if [ "$user_response" = "y" ]; then
-        skip="true"
-    fi
-else
-    read -p "Pre-up: would you like to skip parameter customization and use the template default values? (y/n): " user_response
-    if [ "$user_response" = "y" ]; then
-        generate_env
-        skip="true"
-    fi
-fi
-
-if [ "$skip" = "true" ]; then
+read -p "Pre-up: would you like to skip parameter customization and use the values found in parameters.json? (y/n): " user_response
+if [ "$user_response" = "y" ]; then
     echo "Pre-up: skipping parameter customization..."
-    source .env
     print_summary
     cd ${cwd}
     exit 0
@@ -275,15 +249,24 @@ while true; do
     fi
 done
 
-# Fetch summary:
+# Set variables:
 gpt_model_name=$(echo "$selected_gpt_model" | cut -d "." -f3)
-gpt_deployment_type=$(echo "$selected_gpt_model" | cut -d "." -f2)
+gpt_model_deployment_type=$(echo "$selected_gpt_model" | cut -d "." -f2)
 
 embedding_model_name=$(echo "$selected_embedding_model" | cut -d "." -f3)
-embedding_deployment_type=$(echo "$selected_embedding_model" | cut -d "." -f2)
+embedding_model_deployment_type=$(echo "$selected_embedding_model" | cut -d "." -f2)
 
-generate_env
-source .env
+AZD_PARAM_ROUTER_TYPE="$selected_router_type"
+AZD_PARAM_GPT_MODEL_NAME="$gpt_model_name"
+AZD_PARAM_GPT_MODEL_DEPLOYMENT_TYPE="$gpt_model_deployment_type"
+AZD_PARAM_GPT_MODEL_CAPACITY="$selected_gpt_quota"
+AZD_PARAM_EMBEDDING_MODEL_NAME="$embedding_model_name"
+AZD_PARAM_EMBEDDING_MODEL_DEPLOYMENT_TYPE="$embedding_model_deployment_type"
+AZD_PARAM_EMBEDDING_MODEL_CAPACITY="$selected_embedding_quota"
+
+model_region="$selected_region"
+
+generate_parameters
 print_summary
 
 cd ${cwd}

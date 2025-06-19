@@ -81,3 +81,5 @@ fqdn=$(echo "$result" | grep -m1 '"fqdn": ' "-" | awk '{print $2 }' | tr -d ',"'
 echo -e "\nWeb-App URL: ${fqdn}"
 
 echo "Pre-deploy: container instance spawned"
+
+cd ${cwd}

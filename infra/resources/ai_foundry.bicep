@@ -11,35 +11,15 @@ param location string = resourceGroup().location
 param agents_project_name string = '${name}-agents'
 
 // GPT model:
-@description('Name of GPT model to deploy.')
 param gpt_model_name string
-
-@description('Capacity of GPT model deployment.')
-@minValue(1)
-param gpt_deployment_capacity int
-
-@allowed([
-  'Standard'
-  'GlobalStandard'
-])
-param gpt_deployment_type string
+param gpt_model_deployment_type string
+param gpt_model_capacity int
 
 // Embedding model:
-@description('Name of embedding model to deploy.')
 param embedding_model_name string
-
-@description('Capacity of embedding model deployment.')
-@minValue(1)
-param embedding_deployment_capacity int
-
-@description('Model dimensions of embedding model to deploy.')
+param embedding_model_deployment_type string
+param embedding_model_capacity int
 param embedding_model_dimensions int = 1536
-
-@allowed([
-  'Standard'
-  'GlobalStandard'
-])
-param embedding_deployment_type string
 
 // Search service:
 @description('Name of AI Search resource')
@@ -105,8 +85,8 @@ resource ai_foundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = 
       }
     }
     sku: {
-      name: gpt_deployment_type
-      capacity: gpt_deployment_capacity
+      name: gpt_model_deployment_type
+      capacity: gpt_model_capacity
     } 
   }
 
@@ -119,8 +99,8 @@ resource ai_foundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = 
       }
     }
     sku: {
-      name: embedding_deployment_type
-      capacity: embedding_deployment_capacity
+      name: embedding_model_deployment_type
+      capacity: embedding_model_capacity
     }
     dependsOn: [
       gpt_deployment

@@ -13,12 +13,9 @@ cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}
 
-source .env
-
 echo "Pre-provision: validating parameters..."
 
 selected_subscription_id=$(az account show --query id --output tsv)
-
 if [ "$selected_subscription_id" != "$AZURE_SUBSCRIPTION_ID" ]; then
     echo "Subscription selected during authentication does NOT match subscription selected in azd"
     echo "$selected_subscription_id != $AZURE_SUBSCRIPTION_ID"
@@ -26,9 +23,10 @@ if [ "$selected_subscription_id" != "$AZURE_SUBSCRIPTION_ID" ]; then
     exit 1
 fi
 
-if [ -n "$MODEL_LOCATION" ] && [ "$MODEL_LOCATION" != "$AZURE_LOCATION" ]; then
+model_region=$(grep -m1 'model_region' ${script_dir}/../parameters.json | awk '{ print $2 }' | tr -d '"')
+if [ -n "$model_region" ] && [ "$model_region" != "$AZURE_LOCATION" ]; then
     echo "Region selected during parameter customization does NOT match region selected in azd"
-    echo "$MODEL_LOCATION != $AZURE_LOCATION"
+    echo "$model_region != $AZURE_LOCATION"
     echo "Aborting..."
     exit 1
 fi

@@ -5,7 +5,7 @@ cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}
 
-source .env
+source ${script_dir}/.env
 
 echo "Post-down: purging AI Foundry resource..."
 

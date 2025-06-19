@@ -1,6 +1,9 @@
 // ========== main.bicep ========== //
 targetScope = 'resourceGroup'
 
+// Fetch parameters:
+param configured_parameters object = loadJsonContent('parameters.json')
+
 // Conv-Agent:
 @allowed([
   'BYPASS'
@@ -10,7 +13,7 @@ targetScope = 'resourceGroup'
   'FUNCTION_CALLING'
   'TRIAGE_AGENT'
 ])
-param router_type string = 'TRIAGE_AGENT'
+param router_type string = configured_parameters.router_type
 
 // GPT model:
 @description('Name of GPT model to deploy.')
@@ -18,18 +21,18 @@ param router_type string = 'TRIAGE_AGENT'
   'gpt-4o-mini'
   'gpt-4o'
 ])
-param gpt_model_name string
-
-@description('Capacity of GPT model deployment.')
-@minValue(1)
-param gpt_deployment_capacity int
+param gpt_model_name string = configured_parameters.gpt_model_name
 
 @description('GPT model deployment type.')
 @allowed([
   'Standard'
   'GlobalStandard'
 ])
-param gpt_deployment_type string
+param gpt_model_deployment_type string = configured_parameters.gpt_model_deployment_type
+
+@description('Capacity of GPT model deployment.')
+@minValue(1)
+param gpt_model_capacity int = int(configured_parameters.gpt_model_capacity)
 
 // Embedding model:
 @description('Name of Embedding model to deploy.')
@@ -37,18 +40,18 @@ param gpt_deployment_type string
   'text-embedding-ada-002'
   'text-embedding-3-small'
 ])
-param embedding_model_name string
-
-@description('Capacity of embedding model deployment.')
-@minValue(1)
-param embedding_deployment_capacity int
+param embedding_model_name string = configured_parameters.embedding_model_name
 
 @description('Embedding model deployment type.')
 @allowed([
   'Standard'
   'GlobalStandard'
 ])
-param embedding_deployment_type string
+param embedding_model_deployment_type string = configured_parameters.embedding_model_deployment_type
+
+@description('Capacity of embedding model deployment.')
+@minValue(1)
+param embedding_model_capacity int = int(configured_parameters.embedding_model_capacity)
 
 // Variables:
 var suffix = uniqueString(subscription().id, resourceGroup().id, resourceGroup().location)
@@ -89,11 +92,11 @@ module ai_foundry 'resources/ai_foundry.bicep' = {
     managed_identity_name: managed_identity.outputs.name
     search_service_name: search_service.outputs.name
     gpt_model_name: gpt_model_name
-    gpt_deployment_capacity: gpt_deployment_capacity
-    gpt_deployment_type: gpt_deployment_type
+    gpt_model_deployment_type: gpt_model_deployment_type
+    gpt_model_capacity: gpt_model_capacity
     embedding_model_name: embedding_model_name
-    embedding_deployment_capacity: embedding_deployment_capacity
-    embedding_deployment_type: embedding_deployment_type
+    embedding_model_deployment_type: embedding_model_deployment_type
+    embedding_model_capacity: embedding_model_capacity
   }
 }
 
