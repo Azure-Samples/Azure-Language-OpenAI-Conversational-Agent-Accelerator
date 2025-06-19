@@ -14,6 +14,10 @@ fi
 
 cd ${script_dir}
 
+# Fetch data:
+cp ../../data/*.json .
+cp ../../openapi_specs/*.json .
+
 # Run agent setup:
 echo "Running agent setup..."
 agent_ids=$(python3 agent_setup.py)
