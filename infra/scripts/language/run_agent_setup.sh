@@ -20,7 +20,8 @@ cp ../../openapi_specs/*.json .
 
 # Run agent setup:
 echo "Running agent setup..."
-agent_ids=$(python3 agent_setup.py)
+agent_ids=$(python3 agent_setup.py | )
+echo "$agent_ids"
 
 # Parse the JSON and export the environment variables
 export TRIAGE_AGENT_ID=$(echo "$agent_ids" | jq -r '.TRIAGE_AGENT_ID')

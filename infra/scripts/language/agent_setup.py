@@ -150,11 +150,11 @@ with agents_client:
 
     # Output the agent IDs in a JSON format to be captured as env variables
     agent_ids = {
-        "triage_agent_id": triage_agent_definition.id,
-        "head_support_agent_id": head_support_agent_definition.id,
-        "order_status_agent_id": order_status_agent_definition.id,
-        "order_cancel_agent_id": order_cancel_agent_definition.id,
-        "order_refund_agent_id": order_refund_agent_definition.id,
+        "TRIAGE_AGENT_ID": triage_agent_definition.id,
+        "HEAD_SUPPORT_AGENT_ID": head_support_agent_definition.id,
+        "ORDER_STATUS_AGENT_ID": order_status_agent_definition.id,
+        "ORDER_CANCEL_AGENT_ID": order_cancel_agent_definition.id,
+        "ORDER_REFUND_AGENT_ID": order_refund_agent_definition.id,
     }
 
     print(json.dumps(agent_ids, indent=2))
