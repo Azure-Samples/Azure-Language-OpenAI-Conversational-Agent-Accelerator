@@ -12,7 +12,7 @@ cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}
 
-source ${script_dir}/.env
+source .env
 
 echo "Pre-provision: validating parameters..."
 

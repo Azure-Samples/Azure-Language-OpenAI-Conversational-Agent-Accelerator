@@ -11,7 +11,7 @@ fi
 
 cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
-cd ${script_dir}/..
+cd ${script_dir}
 
 echo "Pre-up: customizing parameters..."
 
