@@ -345,7 +345,7 @@ async def main():
         print("Agent group chat created successfully.")
 
         # Process message
-        user_msg = ChatMessageContent(role=AuthorRole.USER, content="I want to refund order 12389")
+        user_msg = ChatMessageContent(role=AuthorRole.USER, content="refund order 2d4h")
         await asyncio.sleep(5) # Wait to reduce TPM
         print(f"\nReady to process user message: {user_msg.content}\n")
 
