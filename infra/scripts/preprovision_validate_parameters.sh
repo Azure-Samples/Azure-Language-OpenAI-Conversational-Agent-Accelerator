@@ -5,7 +5,7 @@ set -e
 
 if [ "$IS_GITHUB_WORKFLOW_RUN" = "true" ]; then
     # Skip parameter validation during GitHub workflow run:
-    echo "Skipping parameter validation..."
+    echo "Pre-provision: skipping parameter validation..."
     exit 0
 fi
 
@@ -26,9 +26,9 @@ if [ "$selected_subscription_id" != "$AZURE_SUBSCRIPTION_ID" ]; then
     exit 1
 fi
 
-if [ -n "$AZURE_ENV_LOCATION" ] && [ "$AZURE_ENV_LOCATION" != "$AZURE_LOCATION" ]; then
+if [ -n "$MODEL_LOCATION" ] && [ "$MODEL_LOCATION" != "$AZURE_LOCATION" ]; then
     echo "Region selected during parameter customization does NOT match region selected in azd"
-    echo "$AZURE_ENV_LOCATION != $AZURE_LOCATION"
+    echo "$MODEL_LOCATION != $AZURE_LOCATION"
     echo "Aborting..."
     exit 1
 fi
