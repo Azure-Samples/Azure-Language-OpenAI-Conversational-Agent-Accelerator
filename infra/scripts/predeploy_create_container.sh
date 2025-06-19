@@ -30,7 +30,7 @@ echo "Pre-deploy: creating container instance..."
 
 result=$(az container create \
     --resource-group ${RG_NAME} \
-    --name "citest-${RG_SUFFIX}" \
+    --name "ci-${RG_SUFFIX}" \
     --location ${RG_LOCATION} \
     --image ${ACR_NAME}.azurecr.io/${repo}/${image}:${tag} \
     --assign-identity ${MI_ID} \

@@ -4,7 +4,8 @@
     "forwardPorts": [50505],
     "features": {
         "ghcr.io/azure/azure-dev/azd:latest": {},
-         "azure-cli": "latest"
+        "ghcr.io/devcontainers/features/azure-cli:latest": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:latest": {}
     },
     "customizations": {
         "vscode": {
@@ -16,7 +17,7 @@
             ]
         }
     },
-    "postStartCommand": "git pull origin main && echo 'Recommended: run setup script to choose region, models, and capacities:' && echo '  az login' && echo '  source infra/setup_azd_parameters.sh'",
+    "postStartCommand": "git pull origin main",
     "remoteUser": "vscode",
     "hostRequirements": {
         "memory": "4gb"

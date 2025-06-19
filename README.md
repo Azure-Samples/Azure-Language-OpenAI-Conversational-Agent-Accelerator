@@ -81,12 +81,12 @@ This displays the "better together" story when using Azure AI Language with Azur
 **Sample Data:** This project includes sample data to create project dependencies. Sample data is in the context of a fictional outdoor product company: Contoso Outdoors.
 
 **Routing strategies:**
-- 'TRIAGE_AGENT': Route to an intent routing agent that uses 'CLU' and 'CQA' as tools.
+- `TRIAGE_AGENT`: Route to an intent routing agent that uses 'CLU' and 'CQA' as tools.
 - `FUNCTION_CALLING`: Route to either `CLU` or `CQA` runtime using AOAI GPT function-calling to decide.
 - `CLU`: Route to `CLU` runtime only.
 - `CQA`: Route to `CQA` runtime only.
 - `ORCHESTRATION`: Route to either `CQA` or `CLU` runtime using an Azure AI Language [Orchestration](https://learn.microsoft.com/en-us/azure/ai-services/language-service/orchestration-workflow/overview) project to decide.
-- BYPASS: No routing. Only call fallback function.
+- `BYPASS`: No routing. Only call fallback function.
 
 In any case, the fallback function is called if routing "failed". `CLU` route is considered "failed" is confidence threshold is not met or no intent is recognized. `CQA` route is considered "failed" if confidence threhsold is not met or no answer is found. `TRIAGE_AGENT`, `FUNCTION_CALLING` and `ORCHESTRATION` route depend on the return value of the runtime they call.
 
@@ -104,7 +104,7 @@ QUICK DEPLOY
 To deploy this solution accelerator, ensure you have access to an [Azure subscription](https://azure.microsoft.com/free/) with the necessary permissions to create **resource groups and resources** as well as being able to create role assignments. Follow the steps in  [Azure Account Set Up](./docs/azure_account_set_up.md). We recommend you have `Owner` permissions on the subscription you are deploying this template to (though more minimal permissions will suffice as well).
 
 ### Region Selection
-The following regions should support all Azure dependencies (except possibly AOAI model support) for this template:
+The following regions should support all Azure dependencies (except possibly `AOAI` model support) for this template:
 - `australiaeast`
 - `centralindia`
 - `eastus`
@@ -123,6 +123,7 @@ For best latency performance, we recommend you choose a region close to your phy
 
 | **Setting** | **Description** |  **Default value** |
 |------------|----------------|  ------------|
+| **Router Type** | Configure routing strategy | `TRIAGE_AGENT` |
 | **GPT Model Name** | `gpt-4o` or `gpt-4o-mini` | `gpt-4o-mini` |  
 | **GPT Model Deployment Capacity** | Configure capacity for **GPT model deployment** | `100k` |
 | **GPT Deployment Type** | `GlobalStandard` or `Standard` |  `GlobalStandard` |
@@ -130,15 +131,10 @@ For best latency performance, we recommend you choose a region close to your phy
 | **Embedding Model Capacity** | Configure capacity for **embedding model deployment** |  `100k` |
 | **Embedding Deployment Type** | `GlobalStandard` or `Standard` |  `GlobalStandard` |
 
-The models, deployment types, and capacities you choose may depend on the region you select. To help you in choosing what is available in your subscription, please run the helper script:
-```
-az login
-source infra/setup_azd_parameters.sh
-```
-This will populate the above deployment settings based on your selections. The script will automatically be run when you deploy through GitHub Codespaces or VS Code Dev Containers. When you finally run `azd up`, ensure you are choosing the same region you selected here.
+The models, deployment types, and capacities you choose may depend on the region you select. 
 
 ### [Optional] Quota Recommendations
-For demo/test purposes, we recommend model deployment capacities to be **20k tokens**. This small value ensures an adequate testing/demo experience, but is not meant for production workloads.  
+For demo/test purposes, we recommend model deployment capacities to be **100k tokens**. This value ensures an adequate testing/demo experience, but is not meant for production workloads. We also recommend selecting `GlobalStandard` (as opposed to `Standard`) model deployments when possible.
 > **We recommend increasing the capacity for optimal performance under large loads.**
 
 **⚠️ Warning:**  **Insufficient quota can cause deployment errors.** Please ensure you have the recommended capacity or request for additional capacity before deploying this solution.
@@ -159,8 +155,7 @@ You can run this solution using GitHub Codespaces. The button will open a web-ba
 
 2. Accept the default values on the create Codespaces page.
 3. Open a terminal window if it is not already open.
-4. Follow the instructions in the helper script to populate deployment variables.
-5. Continue with the [deploying steps](#deploying).
+4. Continue with the [deploying steps](#deploying).
 
 </details>
 
@@ -178,8 +173,7 @@ You can run this solution in VS Code Dev Containers, which will open the project
 
 
 3. In the VS Code window that opens, once the project files show up (this may take several minutes), open a terminal window.
-4. Follow the instructions in the helper script to populate deployment variables.
-5. Continue with the [deploying steps](#deploying).
+4. Continue with the [deploying steps](#deploying).
 
 </details>
 
@@ -192,8 +186,11 @@ If you're not using one of the above options for opening the project, then you'l
 
 1. Make sure the following tools are installed:
 
-    * `bash`
+    * `bash` (if on a Windows system, we recommend running this in Git Bash)
+    * [Python](https://www.python.org/downloads/)
+    * [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/?view=azure-cli-latest)
     * [Azure Developer CLI (azd)](https://aka.ms/install-azd)
+    * [Docker](https://docs.docker.com/get-started/docker-overview/)
 
 2. Download the project code:
 
@@ -203,50 +200,40 @@ If you're not using one of the above options for opening the project, then you'l
     **Note:** the above command should be run in a new folder of your choosing. You do not need to run `git clone` to download the project source code. `azd init` handles this for you.
 
 3. Open the project folder in your terminal or editor.
-4. Run the helper script to populate deployment variables: 
-```
-az login
-source infra/setup_azd_parameters.sh
-```
-5. Continue with the [deploying steps](#deploying).
+4. Continue with the [deploying steps](#deploying).
 
 </details>
 
 ### Deploying
 
-Once you've opened the project in [Codespaces](#github-codespaces) or in [Dev Containers](#vs-code-dev-containers) or [locally](#local-environment), you can deploy it to Azure following the following steps. 
+Once you've opened the project in [Codespaces](#github-codespaces) or in [Dev Containers](#vs-code-dev-containers) or [locally](#local-environment), you can deploy it to Azure with the following steps. We recommend running this in a Python virtual environment:
+```
+python -m venv <virtual-env-name>
+source <virtual-env-name>/bin/activate
+```
 
-To change the `azd` parameters from the default values, follow the steps [here](./docs/customizing_azd_parameters.md). 
-
-
-1. Login to Azure:
-
-    ```shell
-    azd auth login
-    ```
-
-2. Provision and deploy all the resources:
+1. Provision and deploy all the resources:
 
     ```shell
     azd up
     ```
-
-3. Provide an `azd` environment name (like "conv-agent")
-4. Select a subscription from your Azure account, and select a location which has quota for all the resources. 
-    * This deployment will take *10-15 minutes* to provision the resources in your account and set up the solution with sample data.
-
+2. First, you will be prompted to login to Azure. Ensure you select the account and subscription you are deploying resources to. You will need to login to `Azure CLI` and `Azure Developer CLI`.
+3. Now, you will be prompted to select deployment parameters, such as which models to deploy and with what capacity. Follow the prompts to select your customized parameters.
+4. Next, follow the `azd` prompts:
+    - Provide an `azd` environment name (like "conv-agent").
+    - Select the *same* subscription and region you selected earlier during parameter customization.
+    - Either select an existing resource group, or create a new one.
+    - Provisioning resources will take *5-15 minutes*.
       > **Tip:** A link to view the deployment's detailed progress in the Azure Portal shows up in your terminal window. You can open this link to see the deployment progress and go to the resource group.
-    
-    * If you get an error or timeout with deployment, changing the location can help, as there may be availability constraints for the resources.
+5. Once provisioning is complete, a few setup scripts will run to create various project dependencies in your AI Foundry resource.
+6. Lastly, source code will be deployed. Code in the `src` folder will be built into a Docker image, pushed to your container registry, and a container instance will be created.
+7. Once the deployment has completed successfully, open the [Azure Portal](https://portal.azure.com/), go to the deployed resource group, find the container instance resource (`ci-<unique-identifier>`) and get the app URL from the `FQDN` property.
 
-5. Once the deployment has completed successfully, **wait a few minutes (~5) to let the app finish setting up dependencies**. Then, open the [Azure Portal](https://portal.azure.com/), go to the deployed resource group, find the Container Group resource (`cg-<unique-identifier>`) and get the app URL from `FQDN`.
+8. Test the app with the sample question: _What is your return policy?_ For more sample inputs, see [Sample Questions](#sample-questions).
 
-6. Test the app locally with the sample question: _What is your return policy?_. For more sample questions you can test in the application, see [Sample Questions](#sample-questions).
+    8a. If you are encountering issues viewing the web app, view the container logs of the container instance resource in the Azure Portal. Make sure to include this information when opening any issues on the template.
 
-    6a. If you are encountering issues viewing the web app, try waiting a few more minutes for the app to set up. If you still have issues, view the container logs of the Container Group resource in the Azure Portal. Make sure to include this information when opening any issues on the template.
-
-7. You can now delete the resources by running `azd down`, if you are done trying out the application. 
-<!-- 6. You can now proceed to run the [development server](#development-server) to test the app locally, or if you are done trying out the app, you can delete the resources by running `azd down`. -->
+9. You can now delete the provisioned resources by running `azd down` (if you are done trying out the application). 
 
 ### Additional Steps
 
@@ -260,16 +247,16 @@ To change the `azd` parameters from the default values, follow the steps [here](
 
 2. **Updating Example Data**
 
-    If you wish to update the existing example project data, you can do so by updaing the files in `infra/data/`:
+    If you wish to update the existing example project data, you can do so by updaing the files in `infra/scripts/data/`:
     - update the intents, entities, and utterances in `clu_import.json` to modify the app's CLU project.
     - update the questions and answers in `cqa_import.json` to modify the app's CQA project.
     - update the files in `product_info.tar.gz` to modify the grounding data the app uses to populate a search index for `RAG`.
 
-    If you update these files, ensure that you reference new project/index names in `infra/resources/container_group.bicep`:
-    - update `param clu_project_name` if you updated CLU data.
-    - update `param cqa_project_name` if you updated CQA data.
-    - update `param orchestration_project_name` if you updated CLU or CQA data.
-    - update `param search_index_name` if you updated grounding data.
+    If you update these files, ensure that you reference new project/index names in `infra/main.bicep`:
+    - update `OUTPUT CLU_PROJECT_NAME` if you updated CLU data.
+    - update `OUTPUT CQA_PROJECT_NAME` if you updated CQA data.
+    - update `OUTPUT ORCHESTRATION_PROJECT_NAME` if you updated CLU or CQA data.
+    - update `OUTPUT SEARCH_INDEX_NAME` if you updated grounding data.
 
     When updating example data, ensure that it adheres to [RAI guidelines](#responsible-ai-transparency-faq). Run `azd up` again to update the web app.
 
@@ -292,7 +279,6 @@ Please refer to [Transparency FAQ](./RAI_FAQ.md) for responsible AI transparency
 
 Pricing varies per region and usage, so it isn't possible to predict exact costs for your usage.
 The majority of the Azure resources used in this infrastructure are on usage-based pricing tiers.
-However, Azure Container Registry has a fixed cost per registry per day.
 
 You can try the [Azure pricing calculator](https://azure.microsoft.com/en-us/pricing/calculator) for the resources:
 
@@ -301,6 +287,8 @@ You can try the [Azure pricing calculator](https://azure.microsoft.com/en-us/pri
 * Azure OpenAI: S0 tier, defaults to gpt-4o-mini and text-embedding-ada-002 models. Pricing is based on token count. [Pricing](https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/?msockid=3d25d5a7fe346936111ec024ff8e685c)
 * Azure Container Instances: Pay as you go. Container has default settings of 1 vCPU and 1 GB. [Pricing](https://azure.microsoft.com/en-us/pricing/details/container-instances/?msockid=3d25d5a7fe346936111ec024ff8e685c)
 * Azure AI Language: S tier. [Pricing](https://azure.microsoft.com/en-us/pricing/details/cognitive-services/language-service/?msockid=3d25d5a7fe346936111ec024ff8e685c)
+* Azure AI Foundry Agent Service: S0 tier. [Pricing](https://azure.microsoft.com/en-us/pricing/details/azure-ai-agent-service/?cdn=disable)
+* Azure Container Registry: Standard tier. [Pricing](https://azure.microsoft.com/en-gb/pricing/details/container-registry/?msockid=3d25d5a7fe346936111ec024ff8e685c)
 
 
 ⚠️ To avoid unnecessary costs, remember to take down your app if it's no longer in use,
@@ -324,6 +312,9 @@ Supporting documentation:
 - [Azure AI Language](https://learn.microsoft.com/en-us/azure/ai-services/language-service/overview)
 - [CLU](https://learn.microsoft.com/en-us/azure/ai-services/language-service/conversational-language-understanding/overview)
 - [CQA](https://learn.microsoft.com/en-us/azure/ai-services/language-service/question-answering/overview)
+- [Azure AI Foundry Agent Service](https://azure.microsoft.com/en-us/products/ai-agent-service?msockid=3d25d5a7fe346936111ec024ff8e685c)
+- [Azure Storage](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview)
+- [Azure Container Registry](https://azure.microsoft.com/en-us/products/container-registry/?msockid=3d25d5a7fe346936111ec024ff8e685c)
 
 ## Disclaimers
 To the extent that the Software includes components or code used in or derived from Microsoft products or services, including without limitation Microsoft Azure Services (collectively, “Microsoft Products and Services”), you must also comply with the Product Terms applicable to such Microsoft Products and Services. You acknowledge and agree that the license governing the Software does not grant you a license or other right to use Microsoft Products and Services. Nothing in the license or this ReadMe file will serve to supersede, amend, terminate or modify any terms in the Product Terms for any Microsoft Products and Services. 

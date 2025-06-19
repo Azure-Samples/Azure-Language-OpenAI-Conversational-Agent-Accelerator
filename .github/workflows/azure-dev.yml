@@ -14,6 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: azure/login@v2
+        with:
+          auth-type: IDENTITY
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - uses: microsoft/template-validation-action@Latest
         id: validation
         env:
@@ -24,6 +31,8 @@ jobs:
           AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+          IS_GITHUB_WORKFLOW_RUN: ${{ vars.IS_GITHUB_WORKFLOW_RUN }}
+          AZURE_ENV_ROUTER_TYPE: ${{ vars.AZURE_ENV_ROUTER_TYPE }}
           AZURE_ENV_GPT_MODEL_NAME: ${{ vars.AZURE_ENV_GPT_MODEL_NAME }}
           AZURE_ENV_GPT_MODEL_CAPACITY: ${{ vars.AZURE_ENV_GPT_MODEL_CAPACITY }}
           AZURE_ENV_GPT_MODEL_DEPLOYMENT_TYPE: ${{ vars.AZURE_ENV_GPT_MODEL_DEPLOYMENT_TYPE }}

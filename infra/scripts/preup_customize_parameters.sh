@@ -13,6 +13,19 @@ cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}
 
+if [ -e ".env" ]; then
+    prompt=".env file exists. Would you like to skip parameter customization and use the values found in .env? (y/n): "
+else
+    prompt="Would you like to skip parameter customization and use the template default values? (y/n): "
+fi
+
+read -p "$prompt" user_response
+
+if [ "$user_response" = "y" ]; then
+    echo "Skipping parameter customization..."
+    exit 0
+fi
+
 echo "Pre-up: customizing parameters..."
 
 declare -a routers=(
