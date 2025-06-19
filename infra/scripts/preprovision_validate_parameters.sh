@@ -8,6 +8,12 @@ if [ "$IS_GITHUB_WORKFLOW_RUN" = "true" ]; then
     exit 0
 fi
 
+cwd=$(pwd)
+script_dir=$(dirname $(realpath "$0"))
+cd ${script_dir}
+
+source ${script_dir}/.env
+
 echo "Pre-provision: validating parameters..."
 
 if [ "$AZURE_ENV_SUBSCRIPTION_ID" != "$AZURE_SUBSCRIPTION_ID" ]; then
@@ -23,5 +29,7 @@ if [ "$AZURE_ENV_LOCATION" != "$AZURE_LOCATION" ]; then
     echo "Aborting..."
     exit 1
 fi
+
+cd ${cwd}
 
 echo "Pre-provision: parameters validated"

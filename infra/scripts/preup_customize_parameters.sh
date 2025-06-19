@@ -9,6 +9,10 @@ if [ "$IS_GITHUB_WORKFLOW_RUN" = "true" ]; then
     exit 0
 fi
 
+cwd=$(pwd)
+script_dir=$(dirname $(realpath "$0"))
+cd ${script_dir}/..
+
 echo "Pre-up: customizing parameters..."
 
 declare -a routers=(
@@ -228,20 +232,25 @@ echo "Embedding model deployment type: $embedding_deployment_type"
 echo "Embedding model capacity: $selected_embedding_quota"
 
 # Set AZD env variables:
-export AZURE_ENV_SUBSCRIPTION_ID=$selected_subscription_id
-export AZURE_ENV_LOCATION=$selected_region
+cat << EOF > .env
+export AZURE_ENV_SUBSCRIPTION_ID="$selected_subscription_id"
+export AZURE_ENV_LOCATION="$selected_region"
 
-export AZURE_ENV_ROUTER_TYPE=$selected_router_type
+export AZURE_ENV_ROUTER_TYPE="$selected_router_type"
 
-export AZURE_ENV_GPT_MODEL_NAME=$gpt_model_name
-export AZURE_ENV_GPT_MODEL_CAPACITY=$selected_gpt_quota
-export AZURE_ENV_GPT_MODEL_DEPLOYMENT_TYPE=$gpt_deployment_type
+export AZURE_ENV_GPT_MODEL_NAME="$gpt_model_name"
+export AZURE_ENV_GPT_MODEL_CAPACITY="$selected_gpt_quota"
+export AZURE_ENV_GPT_MODEL_DEPLOYMENT_TYPE="$gpt_deployment_type"
 
-export AZURE_ENV_EMBEDDING_MODEL_NAME=$embedding_model_name
-export AZURE_ENV_EMBEDDING_MODEL_CAPACITY=$selected_embedding_quota
-export AZURE_ENV_EMBEDDING_MODEL_DEPLOYMENT_TYPE=$embedding_deployment_type
+export AZURE_ENV_EMBEDDING_MODEL_NAME="$embedding_model_name"
+export AZURE_ENV_EMBEDDING_MODEL_CAPACITY="$selected_embedding_quota"
+export AZURE_ENV_EMBEDDING_MODEL_DEPLOYMENT_TYPE="$embedding_deployment_type"
 
-echo -e "\nPre-up: azd parameters set"
+EOF
+
+echo -e "\nPre-up: azd parameters set in .env file"
+
+cd ${cwd}
 
 echo "ENSURE THAT YOU SELECT THE FOLLOWING SUBSCRIPTION: ${selected_subscription}"
 echo "ENSURE THAT YOU SELECT THE FOLLOWING REGION: ${selected_region}"

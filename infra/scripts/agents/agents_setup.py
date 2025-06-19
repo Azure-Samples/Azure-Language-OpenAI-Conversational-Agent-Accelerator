@@ -118,4 +118,4 @@ with agents_client:
     print(f"Created agent with ID: {agent.id}")
 
     with open(ENV_FILE, 'a') as fp:
-        fp.write(f'\nexport TRIAGE_AGENT_ID="{agent.id}"\n')
+        fp.write(f'export TRIAGE_AGENT_ID="{agent.id}"\n')

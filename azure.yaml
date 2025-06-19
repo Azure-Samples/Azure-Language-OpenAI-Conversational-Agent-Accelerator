@@ -7,7 +7,7 @@ hooks:
   preup:
     run: |
       . infra/scripts/preup_authenticate.sh
-      . infra/scripts/preup_customize_parameters.sh
+      chmod u+r+x ./infra/scripts/preup_customize_parameters.sh; ./infra/scripts/preup_customize_parameters.sh
     shell: sh
     continueOnError: false
     interactive: true
@@ -19,7 +19,7 @@ hooks:
     interactive: true
   postprovision:
     run: |
-      bash infra/scripts/postprovision_generate_env.sh
+      bash infra/scripts/postprovision_populate_env.sh
       bash infra/scripts/postprovision_run_setup.sh
     shell: sh
     continueOnError: false
