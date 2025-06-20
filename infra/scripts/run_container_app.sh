@@ -42,10 +42,13 @@ npm install
 npm run build
 
 # Run app:
-echo "Running app..."
+echo "Running uvicorn app..."
 cd ${backend_dir}
 python3 -m pip install -r requirements.txt
 cd src
 cp -r ${frontend_dir}/dist .
 
-python3 -m flask --app server run --host=0.0.0.0 --port 80
+#python3 -m flask --app server run --host=0.0.0.0 --port 80
+
+# Run the uvicorn server
+uvicorn app:app --host 0.0.0.0 --port 8000
