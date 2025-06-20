@@ -10,5 +10,4 @@ azure-ai-agents
 azure-ai-textanalytics
 azure-ai-language-conversations
 azure-ai-language-questionanswering
-semantic-kernel
-semantic-kernel[azure]
+semantic-kernel==1.32.2
