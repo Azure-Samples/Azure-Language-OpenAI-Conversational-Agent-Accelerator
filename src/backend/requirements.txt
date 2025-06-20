@@ -1,5 +1,8 @@
 requests
 flask
+uvicorn
+fastapi
+jinja2
 openai
 azure-identity
 azure-search-documents
