@@ -17,13 +17,18 @@ repo="conv-agent"
 image="app"
 tag=$(date '+%Y%m%d-%H%M')
 
-docker build . -t ${ACR_NAME}.azurecr.io/${repo}/${image}:${tag}
+az acr build \
+    -r ${ACR_NAME} \
+    -t ${repo}/${image}:${tag} \
+    .
 
-# Push image to ACR:
-echo "Pre-deploy: pushing image to acr..."
+# docker build . -t ${ACR_NAME}.azurecr.io/${repo}/${image}:${tag}
 
-az acr login --name ${ACR_NAME}
-docker push ${ACR_NAME}.azurecr.io/${repo}/${image}:${tag}
+# # Push image to ACR:
+# echo "Pre-deploy: pushing image to acr..."
+
+# az acr login --name ${ACR_NAME}
+# docker push ${ACR_NAME}.azurecr.io/${repo}/${image}:${tag}
 
 # Create container instance:
 echo "Pre-deploy: creating container instance..."
