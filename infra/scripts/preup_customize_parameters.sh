@@ -232,8 +232,6 @@ while true; do
     fi
 done
 
-echo "----------------------------------------"
-
 # Select router type:
 while true; do
     echo -e "\nAvailable router types:"

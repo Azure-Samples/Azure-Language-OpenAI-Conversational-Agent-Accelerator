@@ -157,6 +157,8 @@ You can run this solution using GitHub Codespaces. The button will open a web-ba
 3. Open a terminal window if it is not already open.
 4. Continue with the [deploying steps](#deploying).
 
+      > **Note:** due to Dev Container constraints, the `azd` environment name is set for you by default ("conv-agent"). To change this, update the `postStartCommand` in `devcontainer.json`.
+
 </details>
 
 <details>
@@ -174,6 +176,8 @@ You can run this solution in VS Code Dev Containers, which will open the project
 
 3. In the VS Code window that opens, once the project files show up (this may take several minutes), open a terminal window.
 4. Continue with the [deploying steps](#deploying).
+
+      > **Note:** due to Dev Container constraints, the `azd` environment name is set for you by default ("conv-agent"). To change this, update the `postStartCommand` in `devcontainer.json`.
 
 </details>
 
@@ -198,9 +202,9 @@ If you're not using one of the above options for opening the project, then you'l
     azd init -t Azure-Samples/Azure-Language-OpenAI-Conversational-Agent-Accelerator/
     ```
     **Note:** the above command should be run in a new folder of your choosing. You do not need to run `git clone` to download the project source code. `azd init` handles this for you.
-
-3. Open the project folder in your terminal or editor.
-4. Continue with the [deploying steps](#deploying).
+3. Provide an `azd` environment name (like "conv-agent").
+4. Open the project folder in your terminal or editor.
+5. Continue with the [deploying steps](#deploying).
 
 </details>
 
@@ -224,9 +228,9 @@ source <virtual-env-name>/bin/activate
     ```
 3. Now, you will be prompted to select deployment parameters, such as which models to deploy and with what capacity. Follow the prompts to select your customized parameters.
 4. Next, follow the `azd` prompts:
-    - Provide an `azd` environment name (like "conv-agent").
     - Select the *same* subscription and region you selected earlier during `az login`.
     - Either select an existing resource group, or create a new one.
+      > **Note:** If you selected a model region earlier, ensure that your resource group is in the same region.
     - Provisioning resources will take *5-15 minutes*.
       > **Tip:** A link to view the deployment's detailed progress in the Azure Portal shows up in your terminal window. You can open this link to see the deployment progress and go to the resource group.
 5. Once provisioning is complete, a few setup scripts will run to create various project dependencies in your AI Foundry resource.
