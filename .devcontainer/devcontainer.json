@@ -17,7 +17,7 @@
             ]
         }
     },
-    "postStartCommand": "git pull origin main && azd init",
+    "postStartCommand": "git pull origin main",
     "remoteUser": "vscode",
     "hostRequirements": {
         "memory": "4gb"
