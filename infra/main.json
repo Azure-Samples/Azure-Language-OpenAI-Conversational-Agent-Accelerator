@@ -951,7 +951,7 @@
             },
             "image": {
               "type": "string",
-              "defaultValue": "mcr.microsoft.com/azure-cli:cbl-mariner2.0"
+              "defaultValue": "mcr.microsoft.com/azure-cli"
             },
             "port": {
               "type": "int",
