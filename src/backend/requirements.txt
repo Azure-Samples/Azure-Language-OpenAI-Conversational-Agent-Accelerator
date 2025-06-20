@@ -10,3 +10,4 @@ azure-ai-agents
 azure-ai-textanalytics
 azure-ai-language-conversations
 azure-ai-language-questionanswering
+semantic-kernel[azure]
