@@ -23,13 +23,13 @@ if [ "$selected_subscription_id" != "$AZURE_SUBSCRIPTION_ID" ]; then
     exit 1
 fi
 
-model_region=$(grep -m1 'model_region' ${script_dir}/../parameters.json | awk '{ print $2 }' | tr -d '"')
-if [ -n "$model_region" ] && [ "$model_region" != "$AZURE_LOCATION" ]; then
-    echo "Region selected during parameter customization does NOT match region selected in azd"
-    echo "$model_region != $AZURE_LOCATION"
-    echo "Aborting..."
-    exit 1
-fi
+# model_region=$(grep -m1 'model_region' ${script_dir}/../parameters.json | awk '{ print $2 }' | tr -d '"')
+# if [ -n "$model_region" ] && [ "$model_region" != "$AZURE_LOCATION" ]; then
+#     echo "Region selected during parameter customization does NOT match region selected in azd"
+#     echo "$model_region != $AZURE_LOCATION"
+#     echo "Aborting..."
+#     exit 1
+# fi
 
 cd ${cwd}
 

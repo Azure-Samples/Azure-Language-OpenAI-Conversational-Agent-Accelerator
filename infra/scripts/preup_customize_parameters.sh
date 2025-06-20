@@ -8,7 +8,7 @@ script_dir=$(dirname $(realpath "$0"))
 cd ${script_dir}
 
 selected_subscription=$(az account show --query name --output tsv)
-model_region=""
+model_region=$(grep -m1 'model_region' ${script_dir}/../parameters.json | awk '{ print $2 }' | tr -d '"')
 
 if [ "$IS_GITHUB_WORKFLOW_RUN" = "true" ]; then
     # Skip parameter customization during GitHub workflow run:
