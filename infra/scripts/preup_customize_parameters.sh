@@ -10,18 +10,9 @@ cd ${script_dir}
 selected_subscription=$(az account show --query name --output tsv)
 model_region=$(grep -m1 'model_region' ${script_dir}/../parameters.json | awk '{ print $2 }' | tr -d '"')
 
-if [ "$IS_GITHUB_WORKFLOW_RUN" = "true" ]; then
-    # Skip parameter customization during GitHub workflow run:
-    echo "Pre-up: using configured workflow variables..."
-    generate_parameters
-    cd ${cwd}
-    exit 0
-fi
-
 function print_summary {
     echo -e "--------------------------\nSUMMARY:"
     echo "Subscription: $selected_subscription"
-    echo "Region: $MODEL_LOCATION"
     echo "Parameters:"
     cat ${script_dir}/../parameters.json
 
@@ -43,6 +34,14 @@ function generate_parameters {
 }
 EOF
 }
+
+if [ "$IS_GITHUB_WORKFLOW_RUN" = "true" ]; then
+    # Skip parameter customization during GitHub workflow run:
+    echo "Pre-up: using configured workflow variables..."
+    generate_parameters
+    cd ${cwd}
+    exit 0
+fi
 
 read -p "Pre-up: would you like to skip parameter customization and use the values found in parameters.json? (y/n): " user_response
 if [ "$user_response" = "y" ]; then

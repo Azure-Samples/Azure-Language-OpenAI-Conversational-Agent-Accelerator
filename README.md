@@ -191,7 +191,7 @@ If you're not using one of the above options for opening the project, then you'l
 1. Make sure the following tools are installed:
 
     * `bash` (if on a Windows system, we recommend running this in Git Bash)
-    * [Python](https://www.python.org/downloads/)
+    * [Python](https://www.python.org/downloads/) (3.12)
     * [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/?view=azure-cli-latest)
     * [Azure Developer CLI (azd)](https://aka.ms/install-azd)
     * [Docker](https://docs.docker.com/get-started/docker-overview/)

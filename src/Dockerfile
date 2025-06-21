@@ -10,7 +10,7 @@ COPY frontend/index.html /app
 RUN npm install
 RUN npm run build
 
-FROM mcr.microsoft.com/azurelinux/base/python:3
+FROM mcr.microsoft.com/azurelinux/base/python:3.12
 
 WORKDIR /app
 
