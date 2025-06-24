@@ -9,6 +9,7 @@ from semantic_kernel_orchestrator import SemanticKernelOrchestrator
 from azure.identity.aio import DefaultAzureCredential
 from semantic_kernel.agents import AzureAIAgent
 from dotenv import load_dotenv
+import logging
 load_dotenv()
 
 # Environment variables
@@ -26,15 +27,16 @@ class ChatRequest(BaseModel):
     message: str
 
 # Set up Jinja2 environment for templates
-#templates = Environment(loader=FileSystemLoader("dist"))
+templates = Environment(loader=FileSystemLoader("dist"))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Setup
-    print("Setting up Azure credentials and client...")
-    print(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
-    print(f"Using MODEL_NAME: {MODEL_NAME}")
-    creds = DefaultAzureCredential()
+    logging.basicConfig(level=logging.INFO)
+    logging.info("Setting up Azure credentials and client...")
+    logging.info(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
+    logging.info(f"Using MODEL_NAME: {MODEL_NAME}")
+    creds = DefaultAzureCredential(exclude_interactive_browser_credential=False)
     await creds.__aenter__()
 
     client = AzureAIAgent.create_client(credential=creds, endpoint=PROJECT_ENDPOINT)
@@ -56,24 +58,24 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
-#app.mount("/static", StaticFiles(directory="dist"), name="static")
+app.mount("/static", StaticFiles(directory="dist"), name="static")
 
 # Define the root path for the static files and templates
-# @app.get("/", response_class=HTMLResponse)
-# async def home_page(request: Request):
-#     """
-#     Render the home page using a template.
-#     """
-#     template = templates.get_template("index.html")
-#     return HTMLResponse(content=template.render())
+@app.get("/", response_class=HTMLResponse)
+async def home_page(request: Request):
+    """
+    Render the home page using a template.
+    """
+    template = templates.get_template("index.html")
+    return HTMLResponse(content=template.render())
 
 # Comment out for local testing
-@app.get("/")
-async def home_page():
-    """
-    Render the home page with a simple message.
-    """
-    return JSONResponse(content={"message": "Welcome to the Semantic Kernel Orchestrator API!"})
+# @app.get("/")
+# async def home_page():
+#     """
+#     Render the home page with a simple message.
+#     """
+#     return JSONResponse(content={"message": "Welcome to the Semantic Kernel Orchestrator API!"})
 
 # Define the chat endpoint
 @app.post("/chat")
