@@ -8,6 +8,8 @@ script_dir=$(dirname $(realpath "$0"))
 src_dir="${script_dir}/../../src"
 cd $src_dir
 
+az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+
 source ${script_dir}/.env
 
 # Build docker image:
