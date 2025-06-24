@@ -61,22 +61,22 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="dist"), name="static")
 
 # Define the root path for the static files and templates
-# @app.get("/", response_class=HTMLResponse)
-# async def home_page(request: Request):
-#     """
-#     Render the home page using a template.
-#     """
-#     logging.info("Rendering home page template...")
-#     template = templates.get_template("index.html")
-#     return HTMLResponse(content=template.render())
+@app.get("/", response_class=HTMLResponse)
+async def home_page(request: Request):
+    """
+    Render the home page using a template.
+    """
+    logging.info("Rendering home page template...")
+    template = templates.get_template("index.html")
+    return HTMLResponse(content=template.render())
 
 # Comment out for local testing
-@app.get("/")
-async def home_page():
-    """
-    Render the home page with a simple message.
-    """
-    return JSONResponse(content={"message": "Welcome to the Semantic Kernel Orchestrator API testing test test!"})
+# @app.get("/")
+# async def home_page():
+#     """
+#     Render the home page with a simple message.
+#     """
+#     return JSONResponse(content={"message": "Welcome to the Semantic Kernel Orchestrator API testing test test!"})
 
 # Define the chat endpoint
 @app.post("/chat")
