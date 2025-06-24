@@ -66,6 +66,7 @@ async def home_page(request: Request):
     """
     Render the home page using a template.
     """
+    logging.info("Rendering home page template...")
     template = templates.get_template("index.html")
     return HTMLResponse(content=template.render())
 
