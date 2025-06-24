@@ -6,6 +6,7 @@ set -e
 if [ "$IS_GITHUB_WORKFLOW_RUN" = "true" ]; then
     # Skip parameter validation during GitHub workflow run:
     echo "Pre-provision: skipping parameter validation..."
+    az account set --subscription "$AZURE_SUBSCRIPTION_ID"
     exit 0
 fi
 
