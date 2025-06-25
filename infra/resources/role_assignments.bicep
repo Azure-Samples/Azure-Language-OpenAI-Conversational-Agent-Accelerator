@@ -98,18 +98,6 @@ resource mi_cognitive_services_language_reader_role_role_assignment 'Microsoft.A
   }
 }
 
-// PRINCIPAL: AI Foundry (OpenAI)
-// TODO
-resource foundry_cognitive_services_language_owner_role_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(ai_foundry.id, ai_foundry.id, cognitive_services_language_owner_role.id)
-  scope: ai_foundry
-  properties: {
-    principalId: ai_foundry.identity.principalId
-    roleDefinitionId: cognitive_services_language_owner_role.id
-    principalType: 'ServicePrincipal'
-  }
-}
-
 // PRINCIPAL: Managed Identity
 // Allow container instance to call agents API using MI.
 resource mi_azure_ai_account_user_role_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
@@ -124,12 +112,12 @@ resource mi_azure_ai_account_user_role_assignment 'Microsoft.Authorization/roleA
 
 // PRINCIPAL: Search Service
 // Allow search service to run AOAI embedding model in indexing pipeline.
-resource search_cognitive_services_openai_contributor_role_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(ai_foundry.id, search_service.id, cognitive_services_openai_contributor_role.id)
+resource search_cognitive_services_openai_user_role_role_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(ai_foundry.id, search_service.id, cognitive_services_openai_user_role.id)
   scope: ai_foundry
   properties: {
     principalId: search_service.identity.principalId
-    roleDefinitionId: cognitive_services_openai_contributor_role.id
+    roleDefinitionId: cognitive_services_openai_user_role.id
     principalType: 'ServicePrincipal'
   }
 }
@@ -150,19 +138,9 @@ resource search_index_data_reader_role 'Microsoft.Authorization/roleDefinitions@
   name: '1407120a-92aa-4202-b7e9-c0e197c71c8f'
 }
 
-@description('Built-in Cognitive Services OpenAI Contributor role (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/ai-machine-learning#cognitive-services-openai-contributor).')
-resource cognitive_services_openai_contributor_role 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: 'a001fd3d-188f-4b5d-821b-7da978bf7442'
-}
-
 @description('Built-in Cognitive Services OpenAI User role (https://docs.azure.cn/en-us/role-based-access-control/built-in-roles/ai-machine-learning#cognitive-services-openai-user).')
 resource cognitive_services_openai_user_role 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
   name: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
-}
-
-@description('Built-in Cognitive Services Language Owner role (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/ai-machine-learning#cognitive-services-language-owner).')
-resource cognitive_services_language_owner_role 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: 'f07febfe-79bc-46b1-8b37-790e26e6e498'
 }
 
 @description('Built-in Cognitive Services Language Reader role (https://docs.azure.cn/en-us/role-based-access-control/built-in-roles/ai-machine-learning#cognitive-services-language-reader).')
