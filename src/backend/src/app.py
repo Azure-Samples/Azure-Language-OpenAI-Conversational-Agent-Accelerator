@@ -3,6 +3,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel
 from semantic_kernel_orchestrator import SemanticKernelOrchestrator
@@ -27,15 +29,15 @@ class ChatRequest(BaseModel):
     message: str
 
 # Set up Jinja2 environment for templates
-templates = Environment(loader=FileSystemLoader("dist"))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Setup
-    logging.basicConfig(level=logging.INFO)
-    logging.info("Setting up Azure credentials and client...")
-    logging.info(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
-    logging.info(f"Using MODEL_NAME: {MODEL_NAME}")
+    logging.basicConfig(level=logging.WARNING)
+    logging.warning("Setting up Azure credentials and client...")
+    logging.warning(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
+    logging.warning(f"Using MODEL_NAME: {MODEL_NAME}")
     creds = DefaultAzureCredential(exclude_interactive_browser_credential=False)
     await creds.__aenter__()
 
@@ -61,14 +63,11 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="dist"), name="static")
 
 # Define the root path for the static files and templates
-@app.get("/", response_class=HTMLResponse)
-async def home_page(request: Request):
-    """
-    Render the home page using a template.
-    """
-    logging.info("Rendering home page template...")
-    template = templates.get_template("index.html")
-    return HTMLResponse(content=template.render())
+
+@app.get("/")
+async def serve_frontend():
+    return FileResponse("dist/index.html")
+
 
 # Comment out for local testing
 # @app.get("/")
@@ -83,4 +82,5 @@ async def home_page(request: Request):
 async def chat_endpoint(request: ChatRequest):
     orchestrator = app.state.orchestrator
     response = await orchestrator.process_message(request.message)
-    return {"response": response}
+    logging.warning(f"Response from orchestrator: {response}")
+    return JSONResponse(content={"messages": [response]}, status_code=200)
