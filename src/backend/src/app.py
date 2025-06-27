@@ -25,11 +25,10 @@ AGENT_IDS = {
     "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
 }
 
+DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
+
 class ChatRequest(BaseModel):
     message: str
-
-# Set up Jinja2 environment for templates
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -66,14 +65,13 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="dist"), name="static")
+app.mount("/static", StaticFiles(directory=DIST_DIR), name="static")
 
 # Define the root path for the static files and templates
 
 @app.get("/")
 async def serve_frontend():
-    logging.warning("Serving frontend index.html")
-    return FileResponse("dist/index.html")
+    return FileResponse(os.path.join(DIST_DIR, "index.html"))
 
 # Comment out for local testing
 # @app.get("/")
