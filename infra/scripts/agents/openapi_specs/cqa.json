@@ -7,13 +7,13 @@
   },
   "servers": [
     {
-      "url": "${language_resource_url}/language"
+      "url": "${LANGUAGE_ENDPOINT}/language"
     }
   ],
   "paths": {
     "/:query-knowledgebases": {
       "post": {
-        "description": "Answers the specified question using your knowledge base.",
+        "description": "Answers the specified question using project knowledge base.",
         "operationId": "CQA_Query_Knowledgebases",
         "parameters": [
           {
@@ -22,9 +22,9 @@
             "required": true,
             "schema": {
               "type": "string",
-              "default": "${cqa_project_name}"
+              "default": "${CQA_PROJECT_NAME}"
             },
-            "description": "The name of the project to use. value must be '${cqa_project_name}'"
+            "description": "The name of the project to use. Value must be `${CQA_PROJECT_NAME}`."
           },
           {
             "name": "deploymentName",
@@ -32,19 +32,19 @@
             "required": true,
             "schema": {
               "type": "string",
-              "default": "${cqa_deployment_name}"
+              "default": "${CQA_DEPLOYMENT_NAME}"
             },
-            "description": "The name of the specific deployment of the project to use. value must be '${cqa_deployment_name}'"
+            "description": "The name of the specific deployment of the project to use. Value must be `${CQA_DEPLOYMENT_NAME}`."
           },
           {
             "name": "api-version",
             "in": "query",
-            "description": "API version. Value must be '2023-04-01'",
             "required": true,
             "schema": {
               "type": "string",
-              "default": "2023-04-01"
-            }
+              "default": "${CQA_API_VERSION}"
+            },
+            "description": "API version. Value must be `${CQA_API_VERSION}`."
           }
         ],
         "requestBody": {
@@ -100,7 +100,7 @@
         "properties": {
           "question": {
             "type": "string",
-            "description": "User question to query against the knowledge base."
+            "description": "User question to query against the knowledge base. Value must be the exact user input."
           },
           "top": {
             "type": "integer",

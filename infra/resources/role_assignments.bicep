@@ -110,6 +110,18 @@ resource mi_azure_ai_account_user_role_assignment 'Microsoft.Authorization/roleA
   }
 }
 
+// PRINCIPAL: AI Foundry (OpenAI)
+// Allow triage agent to call language APIs.
+resource foundry_cognitive_services_language_reader_role_role_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(ai_foundry.id, ai_foundry.id, cognitive_services_language_reader_role.id)
+  scope: ai_foundry
+  properties: {
+    principalId: ai_foundry.identity.principalId
+    roleDefinitionId: cognitive_services_language_reader_role.id
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // PRINCIPAL: Search Service
 // Allow search service to run AOAI embedding model in indexing pipeline.
 resource search_cognitive_services_openai_user_role_role_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
