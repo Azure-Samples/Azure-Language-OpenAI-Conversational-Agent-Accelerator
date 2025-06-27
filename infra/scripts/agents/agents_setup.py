@@ -36,15 +36,14 @@ def create_agent(agent_config: dict, parameters: dict):
     # Create OpenAPI tools:
     tools = []
     for tool in agent_config['openapi_tools']:
-        with open(f'openapi_specs/{tool.spec}', 'r') as fp:
+        with open(f'openapi_specs/{tool['spec']}', 'r') as fp:
             spec = json.loads(bind_parameters(fp.read(), parameters))
-        tool = OpenApiTool(
-            name=tool.name,
+        tools.append(OpenApiTool(
+            name=tool['name'],
             spec=spec,
-            description=tool.description,
+            description=tool['description'],
             auth=auth
-        )
-        tools.append(tool)
+        ))
 
     # Generate instructions:
     instructions = bind_parameters(agent_config['instructions'], parameters)
