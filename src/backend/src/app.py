@@ -34,29 +34,35 @@ class ChatRequest(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Setup
-    logging.basicConfig(level=logging.WARNING)
-    logging.warning("Setting up Azure credentials and client...")
-    logging.warning(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
-    logging.warning(f"Using MODEL_NAME: {MODEL_NAME}")
-    creds = DefaultAzureCredential(exclude_interactive_browser_credential=False)
-    await creds.__aenter__()
+    try:
+        logging.basicConfig(level=logging.WARNING)
+        logging.warning("Setting up Azure credentials and client...")
+        logging.warning(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
+        logging.warning(f"Using MODEL_NAME: {MODEL_NAME}")
+        creds = DefaultAzureCredential(exclude_interactive_browser_credential=False)
+        await creds.__aenter__()
 
-    client = AzureAIAgent.create_client(credential=creds, endpoint=PROJECT_ENDPOINT)
-    await client.__aenter__()
+        client = AzureAIAgent.create_client(credential=creds, endpoint=PROJECT_ENDPOINT)
+        await client.__aenter__()
 
-    orchestrator = SemanticKernelOrchestrator(client, MODEL_NAME, PROJECT_ENDPOINT, AGENT_IDS)
-    await orchestrator.initialize()
+        orchestrator = SemanticKernelOrchestrator(client, MODEL_NAME, PROJECT_ENDPOINT, AGENT_IDS)
+        await orchestrator.initialize()
 
-    # Store in app state
-    app.state.creds = creds
-    app.state.client = client
-    app.state.orchestrator = orchestrator
+        # Store in app state
+        app.state.creds = creds
+        app.state.client = client
+        app.state.orchestrator = orchestrator
 
-    yield
+        yield
 
-    # Teardown
-    await client.__aexit__(None, None, None)
-    await creds.__aexit__(None, None, None)
+    except Exception as e:
+        logging.error(f"Error during setup: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    finally:
+        # Teardown
+        await client.__aexit__(None, None, None)
+        await creds.__aexit__(None, None, None)
 
 # Create FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
@@ -66,8 +72,8 @@ app.mount("/static", StaticFiles(directory="dist"), name="static")
 
 @app.get("/")
 async def serve_frontend():
+    logging.warning("Serving frontend index.html")
     return FileResponse("dist/index.html")
-
 
 # Comment out for local testing
 # @app.get("/")
