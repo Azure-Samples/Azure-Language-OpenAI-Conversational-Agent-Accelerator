@@ -26,6 +26,8 @@ AGENT_IDS = {
 }
 
 DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
+# log dist_dir
+logging.warning(f"DIST_DIR: {DIST_DIR}")
 
 class ChatRequest(BaseModel):
     message: str
@@ -65,7 +67,9 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory=DIST_DIR), name="static")
+#app.mount("/static", StaticFiles(directory=DIST_DIR), name="static")
+app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
+
 
 # Define the root path for the static files and templates
 
