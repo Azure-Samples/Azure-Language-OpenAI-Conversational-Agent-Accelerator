@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 import os
 import json
-from azure.identity import DefaultAzureCredential
+from azure.identity import AzureCliCredential
 from azure.ai.language.questionanswering.authoring import AuthoringClient
 
 
@@ -10,7 +10,7 @@ project_name = os.environ['CQA_PROJECT_NAME']
 deployment_name = os.environ['CQA_DEPLOYMENT_NAME']
 
 endpoint = os.environ['LANGUAGE_ENDPOINT']
-credential = DefaultAzureCredential()
+credential = AzureCliCredential()
 
 client = AuthoringClient(endpoint, credential)
 

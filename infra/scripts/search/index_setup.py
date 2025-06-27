@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 import os
-from azure.identity import DefaultAzureCredential
+from azure.identity import AzureCliCredential
 from azure.search.documents.indexes import SearchIndexClient, SearchIndexerClient
 from azure.search.documents.indexes.models import (
     SearchField,
@@ -42,7 +42,7 @@ skillset_name = index_name + '-ss'
 indexer_name = index_name + '-idxr'
 
 endpoint = os.environ['SEARCH_ENDPOINT']
-credential = DefaultAzureCredential()
+credential = AzureCliCredential()
 
 # Search index:
 index_client = SearchIndexClient(endpoint=endpoint, credential=credential)

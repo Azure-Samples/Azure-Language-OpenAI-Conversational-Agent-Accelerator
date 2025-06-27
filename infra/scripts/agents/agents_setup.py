@@ -3,7 +3,7 @@
 import os
 import json
 import yaml
-from azure.identity import DefaultAzureCredential
+from azure.identity import AzureCliCredential
 from azure.ai.agents import AgentsClient
 from azure.ai.agents.models import (
     OpenApiTool, OpenApiManagedAuthDetails, OpenApiManagedSecurityScheme
@@ -20,7 +20,7 @@ AGENTS_CONFIG_FILE = 'agents_config.yaml'
 # Create agents client:
 AGENTS_CLIENT = AgentsClient(
     endpoint=AGENTS_PROJECT_ENDPOINT,
-    credential=DefaultAzureCredential(),
+    credential=AzureCliCredential(),
     api_version=AGENTS_API_VERSION
 )
 
@@ -35,7 +35,7 @@ def create_agent(agent_config: dict, parameters: dict):
 
     # Create OpenAPI tools:
     tools = []
-    for tool in agent_config.openapi_tools:
+    for tool in agent_config['openapi_tools']:
         with open(f'openapi_specs/{tool.spec}', 'r') as fp:
             spec = json.loads(bind_parameters(fp.read(), parameters))
         tool = OpenApiTool(
@@ -52,7 +52,7 @@ def create_agent(agent_config: dict, parameters: dict):
     if DELETE_OLD_AGENTS:
         # Delete all existing agents with the same target name:
         to_delete = [
-            agent for agent in AGENTS_CLIENT.list_agents() if agent.name == agent_config.name
+            agent for agent in AGENTS_CLIENT.list_agents() if agent.name == agent_config['name']
         ]
         for agent in to_delete:
             print(f"Deleting existing agent: {agent.id}")
@@ -61,16 +61,16 @@ def create_agent(agent_config: dict, parameters: dict):
     # Create agent:
     agent = AGENTS_CLIENT.create_agent(
         model=AGENTS_MODEL_NAME,
-        name=agent_config.name,
+        name=agent_config['name'],
         instructions=instructions,
         tools=[tool_def for tool in tools for tool_def in tool.definitions]
     )
 
-    print(f'Agent created: {agent_config.name}, {agent.id}')
+    print(f'Agent created: {agent_config['name']}, {agent.id}')
 
     # Update env file:
     with open(ENV_FILE, 'a') as fp:
-        fp.write(f'export {agent_config.env_var}="{agent.id}"\n')
+        fp.write(f'export {agent_config['env_var']}="{agent.id}"\n')
 
 
 # Fetch agents config:
@@ -83,7 +83,7 @@ triage_agent_parameters = {
     'clu_example_intents': ', '.join(get_clu_intents()),
     'cqa_example_questions': ', '.join(get_cqa_questions())
 }
-create_agent(agents_config.triage_agent, triage_agent_parameters)
+create_agent(agents_config['triage_agent'], triage_agent_parameters)
 
 # Cleanup:
 AGENTS_CLIENT.close()

@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 import os
-from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
+from azure.identity import AzureCliCredential, ManagedIdentityCredential
 
 
 def get_azure_credential():
@@ -13,4 +13,4 @@ def get_azure_credential():
             client_id=mi_client_id
         )
 
-    return DefaultAzureCredential()
+    return AzureCliCredential()

@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 import os
 import json
-from azure.identity import DefaultAzureCredential
+from azure.identity import AzureCliCredential
 from azure.ai.language.conversations.authoring import ConversationAuthoringClient
 
 
@@ -15,7 +15,7 @@ clu_deployment_name = os.environ['CLU_DEPLOYMENT_NAME']
 cqa_project_name = os.environ['CQA_PROJECT_NAME']
 
 endpoint = os.environ['LANGUAGE_ENDPOINT']
-credential = DefaultAzureCredential()
+credential = AzureCliCredential()
 
 client = ConversationAuthoringClient(endpoint, credential)
 

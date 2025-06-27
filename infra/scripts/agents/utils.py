@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 import os
 import re
-from azure.identity import DefaultAzureCredential
+from azure.identity import AzureCliCredential
 from azure.ai.language.conversations.authoring import ConversationAuthoringClient
 from azure.ai.language.questionanswering.authoring import AuthoringClient
 from azure.core.rest import HttpRequest
@@ -31,7 +31,7 @@ def get_clu_intents() -> list[str]:
     project_name = os.environ['CLU_PROJECT_NAME']
     client = ConversationAuthoringClient(
         endpoint=os.environ['LANGUAGE_ENDPOINT'],
-        credential=DefaultAzureCredential()
+        credential=AzureCliCredential()
     )
 
     try:
@@ -66,7 +66,7 @@ def get_cqa_questions() -> list[str]:
     project_name = os.environ['CQA_PROJECT_NAME']
     client = AuthoringClient(
         endpoint=os.environ['LANGUAGE_ENDPOINT'],
-        credential=DefaultAzureCredential()
+        credential=AzureCliCredential()
     )
 
     try:
