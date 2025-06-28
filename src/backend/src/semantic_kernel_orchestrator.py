@@ -5,7 +5,6 @@ from semantic_kernel.agents import AzureAIAgent, AgentGroupChat
 from semantic_kernel.agents.strategies import TerminationStrategy, SequentialSelectionStrategy
 from agents.order_status_plugin import OrderStatusPlugin
 from agents.order_refund_plugin import OrderRefundPlugin
-from agents.triage_plugin import TriagePlugin
 from agents.order_cancel_plugin import OrderCancellationPlugin
 from semantic_kernel.contents import AuthorRole, ChatMessageContent
 
