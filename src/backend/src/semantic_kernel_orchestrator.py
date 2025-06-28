@@ -5,6 +5,7 @@ from semantic_kernel.agents import AzureAIAgent, AgentGroupChat
 from semantic_kernel.agents.strategies import TerminationStrategy, SequentialSelectionStrategy
 from agents.order_status_plugin import OrderStatusPlugin
 from agents.order_refund_plugin import OrderRefundPlugin
+from agents.triage_plugin import TriagePlugin
 from agents.order_cancel_plugin import OrderCancellationPlugin
 from semantic_kernel.contents import AuthorRole, ChatMessageContent
 
@@ -84,11 +85,12 @@ class ApprovalStrategy(TerminationStrategy):
         
 # Custom multi-agent semantic kernel orchestrator
 class SemanticKernelOrchestrator:
-    def __init__(self, client, model_name, project_endpoint, agent_ids):
+    def __init__(self, client, model_name, project_endpoint, agent_ids, max_retries=3):
         self.model_name = model_name
         self.project_endpoint = project_endpoint
         self.agent_ids = agent_ids
         self.client = client
+        self.max_retries = max_retries
 
         # Initialize plugins for custom agents
         self.order_status_plugin = OrderStatusPlugin()
@@ -106,7 +108,6 @@ class SemanticKernelOrchestrator:
         triage_agent = AzureAIAgent(
         client=self.client,
         definition=triage_agent_definition,
-        description="A customer support agent that chooses between CLU and CQA APIs tools. The CLU API version query parameter must be '2023-04-10' - this is extremely critical",
         )
 
         order_status_agent_definition = await self.client.agents.get_agent(self.agent_ids["ORDER_STATUS_AGENT_ID"])
@@ -185,40 +186,56 @@ class SemanticKernelOrchestrator:
         Process a message in the agent group chat.
         This method creates a new agent group chat and processes the message.
         """
-        # Create a user message content
-        user_message = ChatMessageContent(
-            role=AuthorRole.USER,
-            content=message_content,
-        )
 
-        # Append the current log file to the chat
-        await self.agent_group_chat.add_chat_message(user_message)
-        print()
+        retry_count = 0
+        last_exception = None
 
-        try:
-            print()
-            # Invoke a response from the agents
-            async for response in self.agent_group_chat.invoke():
-                if response is None or not response.name:
-                    continue
-                print(f"{response.content}")
-                final_response = response.content
+        while retry_count < self.max_retries:
+            try:
+                # Create a user message content
+                user_message = ChatMessageContent(
+                    role=AuthorRole.USER,
+                    content=message_content,
+                )
+
+                # Append the current log file to the chat
+                await self.agent_group_chat.add_chat_message(user_message)
             
-            final_response = json.loads(final_response)
+                print("User message added to chat:", user_message.content)
+                # Invoke a response from the agents
+                async for response in self.agent_group_chat.invoke():
+                    if response is None or not response.name:
+                        continue
+                    print(f"{response.content}")
+                    final_response = response.content
+                
+                final_response = json.loads(final_response)
 
-            # if CQA
-            if final_response.get("type") == "cqa_result":
-                print("CQA result received, terminating chat.")
-                final_response = final_response['response']['answers'][0]['answer']
-                print("final response is ", final_response)
-                return final_response
-            # if CLU
-            else:
-                print("CLU result received, printing custom agent response.")
-                print("final response is ", final_response['response'])
-                return final_response['response']
+                # if CQA
+                if final_response.get("type") == "cqa_result":
+                    print("CQA result received, terminating chat.")
+                    final_response = final_response['response']['answers'][0]['answer']
+                    print("final response is ", final_response)
+                    return final_response
+                # if CLU
+                else:
+                    print("CLU result received, printing custom agent response.")
+                    print("final response is ", final_response['response'])
+                    return final_response['response']
 
-        except Exception as e:
-            print(f"Error during chat invocation: {e}")
-            return {"error": e}
+            except Exception as e:
+                retry_count += 1
+                last_exception = e
+                print(f"Error during chat invocation, retrying {retry_count}/{self.max_retries} times: {e}")
+
+                # reset chat state
+                self.agent_group_chat.clear_activity_signal()
+                await self.agent_group_chat.reset()
+                print("Chat reset due to error.")
+
+                continue
+            
+        print("Max retries reached, returning last exception.")
+        if last_exception:
+            return {"error": last_exception}
         

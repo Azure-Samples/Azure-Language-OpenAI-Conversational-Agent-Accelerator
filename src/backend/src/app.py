@@ -67,11 +67,8 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
-#app.mount("/static", StaticFiles(directory=DIST_DIR), name="static")
 app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
 
-
-# Define the root path for the static files and templates
 
 @app.get("/")
 async def serve_frontend():

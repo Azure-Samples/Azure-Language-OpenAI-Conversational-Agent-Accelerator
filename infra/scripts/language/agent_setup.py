@@ -72,6 +72,7 @@ with agents_client:
         2. clu_api: to extract the intent of the message.
         You must use the ONE of the tools to perform your task. You should only use one tool at a time, and do NOT chain the tools together. Only if the tools are not able to provide the information, you can answer according to your general knowledge. You must return the full API response for either tool and ensure it's a valid JSON.
         - When you return answers from the clu_api, format the response as JSON: {"type": "clu_result", "response": {clu_response}, "terminated": "False"}, where clu_response is the full JSON API response from the clu_api without rewriting or removing any info.   Return immediately. Do not call the cqa_api afterwards.
+            - An example of a valid clu_response is {"kind": "ConversationResult", "result": {"query": "what's the status of order 1234", "prediction": {"topIntent": "OrderStatus", "projectKind": "Conversation", "intents": [{"category": "OrderStatus", "confidenceScore": 0.8545539}, {"category": "CancelOrder", "confidenceScore": 0.59596604}, {"category": "RefundStatus", "confidenceScore": 0.5501976}, {"category": "None", "confidenceScore": 0.33382362}], "entities": [{"category": "OrderId", "text": "1234", "offset": 27, "length": 4, "confidenceScore": 1, "resolutions": [{"resolutionKind": "NumberResolution", "numberKind": "Integer", "value": 1234}], "extraInformation": [{"extraInformationKind": "EntitySubtype", "value": "quantity.number"}]}]}}}
             - To call the clu_api, the following parameter values **must** be used in the payload as a valid JSON object: {"api-version":"2023-04-01", "analysisInput":{"conversationItem":{"id":<id>,"participantId":<id>,"text":<user input>}},"parameters":{"projectName":"conv-assistant-clu","deploymentName":"clu-m1-d1"},"kind":"Conversation"}
             - You must validate the input to ensure it is a valid JSON object before calling the clu_api.
         - When you return answers from the cqa_api, format the response as JSON: {"type": "cqa_result", "response": {cqa_response}, "terminated": "True"} where cqa_response is the full JSON API response from the cqa_api without rewriting or removing any info. Return immediately
@@ -82,7 +83,7 @@ with agents_client:
         name=TRIAGE_AGENT_NAME,
         instructions= TRIAGE_AGENT_INSTRUCTIONS,
         tools=clu_api_tool.definitions + cqa_api_tool.definitions,
-        temperature=0.1,
+        temperature=0.2,
         )
     
     # 2) Create the head support agent which takes in CLU intents and entities and routes the request to the appropriate support agent
