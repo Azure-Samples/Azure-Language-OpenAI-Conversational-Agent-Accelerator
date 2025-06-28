@@ -17,6 +17,11 @@ triage_agent:
       2. `clu_api`: for utterances seeking to perform an action, use this tool to extract the intent of the action.
         - Here are a few examples of questions/topics a user utterance may relate to where `cqa_api` should be called: ${cqa_example_questions}.
         - When you return answers from `cqa_api`, format the response as JSON: {"type": "cqa_result", "response": {cqa_response}}, where `cqa_response` is the full JSON API response from `cqa_api`.
+        - To call `clu_api`, the following parameters values should be used in the payload:
+            - `projectName`: value must be `${CLU_PROJECT_NAME}`.
+            - `deploymentName`: value must be `${CLU_DEPLOYMENT_NAME}`.
+            - `text`: value must be the exact user input.
+            - `api-version`: value must be `${CLU_API_VERSION}`.
 
     Safety Information:
       - You must use ONE of the two tools to perform your task.
