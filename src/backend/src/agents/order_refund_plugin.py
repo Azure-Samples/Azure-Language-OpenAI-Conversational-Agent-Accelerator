@@ -11,5 +11,5 @@ class OrderRefundPlugin:
     def process_refund(self, order_id: str) -> str:
         """Process a refund for an order."""
         # Simulate processing a refund
-        print(f"Processing refund for order {order_id}")
+        print(f"[RefundPlugin] Processing refund for order {order_id}")
         return f"Refund for order {order_id} has been processed successfully."

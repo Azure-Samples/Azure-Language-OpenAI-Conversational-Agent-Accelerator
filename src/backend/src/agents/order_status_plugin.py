@@ -10,4 +10,5 @@ class OrderStatusPlugin:
     @kernel_function
     def check_order_status(self, order_id: str) -> str:
         """Check the status of an order."""
+        print(f"[OrderStatusPlugin] Checking status for order {order_id}")
         return f"Order {order_id} is shipped and will arrive in 2-3 days."

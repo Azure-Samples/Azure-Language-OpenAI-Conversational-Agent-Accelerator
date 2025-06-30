@@ -11,5 +11,5 @@ class OrderCancellationPlugin:
     def process_cancellation(self, order_id: str) -> str:
         """Process a cancellation for an order."""
         # Simulate processing a cancellation
-        print(f"Processing cancellation for order {order_id}")
+        print(f"[CancellationPlugin] Processing cancellation for order {order_id}")
         return f"Cancellation for order {order_id} has been processed successfully."

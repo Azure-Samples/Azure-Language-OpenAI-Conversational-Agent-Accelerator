@@ -7,25 +7,21 @@ from agents.order_status_plugin import OrderStatusPlugin
 from agents.order_refund_plugin import OrderRefundPlugin
 from agents.order_cancel_plugin import OrderCancellationPlugin
 from semantic_kernel.contents import AuthorRole, ChatMessageContent
+from azure.ai.projects import AIProjectClient
+from typing import Callable
 
 # Create custom selection strategy for the agent groupchat by sublcassing the SequentialSelection Strategy
 class SelectionStrategy(SequentialSelectionStrategy):
     async def select_agent(self, agents, history):
         """
-        Select agent based on the current message and agent.
-        This method overrides the default selection strategy to use a custom logic.
-            - The triage agent is always selected after the user message.
-            - If the triage agent returns a CQA result, the chat is terminated and the CQA result is returned.
-            - If the triage agent returns a CLU result, the head support agent is selected.
-            - Based on the intent and entities passed to the head support agent, the appropriate custom agent (return, refund, order status) is selected
-            - The custom agent returns the result and the chat is terminated.
-            - If any agents fail, the chat falls back to a default response.
+        Multi-agent orchestration method for Semantic Kernel Agent Group Chat
+        This method decides how to select agent based on the current message and agent with custom logic
+        The two possible routes with this multi-agent orchestration are:
+            1) user query -> triage agent [CLU tool invoked] -> head support agent -> custom agent -> terminate chat and return custom agent answer.
+            2) user query -> triage agent [CQA tool invoked] -> terminate chat and return CQA answer.
         """
         last = history[-1] if history else None
 
-        # print("last message:", last)
-        # print("last message name:", last.name if last else None)
-                
         if not last or last.role == AuthorRole.USER or last is None:
             # If the last message is from the user, select the triage agent
             print("[SYSTEM]: Last message is from the USER, routing to TriageAgent...")
@@ -85,11 +81,24 @@ class ApprovalStrategy(TerminationStrategy):
         
 # Custom multi-agent semantic kernel orchestrator
 class SemanticKernelOrchestrator:
-    def __init__(self, client, model_name, project_endpoint, agent_ids, max_retries=3):
+    def __init__(
+        self,
+        client: AIProjectClient,
+        model_name: str,
+        project_endpoint: str,
+        agent_ids: dict,
+        fallback_function: Callable[[str, str, str], dict],
+        max_retries: int = 3
+    ):
+        """
+        Initialize the semantic kernel orchestrator with the AI Project client, model name, project endpoint,
+        agent IDs, fallback function, and maximum retries.
+        """
+        self.client = client
         self.model_name = model_name
         self.project_endpoint = project_endpoint
         self.agent_ids = agent_ids
-        self.client = client
+        self.fallback_function = fallback_function
         self.max_retries = max_retries
 
         # Initialize plugins for custom agents
@@ -97,11 +106,10 @@ class SemanticKernelOrchestrator:
         self.order_refund_plugin = OrderRefundPlugin()
         self.order_cancel_plugin = OrderCancellationPlugin()
 
-    # Initialize Semantic Kernel Azure AI Agents
     async def initialize_agents(self) -> list:
         """
-        Initialize the agents for the semantic kernel orchestrator.
-        This method retrieves the agent definitions from AI Foundry and creates AzureAIAgent instances.
+        Initialize the Semantic Kernel Azure AI agents for the semantic kernel orchestrator.
+        This method retrieves the agent definitions from AI Foundry and creates AzureAIAgent instances for each foundry agent.
         """
         # Grab the agent definition from AI Foundry
         triage_agent_definition = await self.client.agents.get_agent(self.agent_ids["TRIAGE_AGENT_ID"])
@@ -150,10 +158,10 @@ class SemanticKernelOrchestrator:
 
         return [triage_agent, head_support_agent, order_status_agent, order_cancel_agent, order_refund_agent]
 
-    # Create multi-agent orchestration
     async def create_agent_group_chat(self) -> None:
         """
-        Create an agent group chat with the specified chat ID.
+        Create an agent group chat with the specified chat ID after all agents have been initialized.
+        This method initializes the agents and sets up the agent group chat with custom selection and termination strategies
         """
         created_agents = await self.initialize_agents()
         print("Agents initialized:", [agent.name for agent in created_agents])
@@ -180,13 +188,11 @@ class SemanticKernelOrchestrator:
         print("Agent group chat created successfully.")
         print("Agents initialized:", [agent.name for agent in self.agent_group_chat.agents])
 
-    # Process user messages and invoke the agent group chat
     async def process_message(self, message_content: str) -> str:
         """
         Process a message in the agent group chat.
         This method creates a new agent group chat and processes the message.
         """
-
         retry_count = 0
         last_exception = None
 
@@ -237,6 +243,7 @@ class SemanticKernelOrchestrator:
                 continue
             
         print("Max retries reached, returning last exception.")
+
         if last_exception:
             return {"error": last_exception}
         
