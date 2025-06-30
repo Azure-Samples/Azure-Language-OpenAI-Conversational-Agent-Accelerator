@@ -112,9 +112,9 @@ with agents_client:
     # 3) Create the custom agents for handling specific intents (our examples are OrderStatus, OrderCancel, and OrderRefund). Plugin tools will be added to these agents when we turn them into Semantic Kernel agents.
     ORDER_STATUS_AGENT_NAME = "OrderStatusAgent"
     ORDER_STATUS_AGENT_INSTRUCTIONS = """
-    You are a customer support agent that checks order status. You must use the OrderStatusPlugin to check the status of an order.
+    You are a customer support agent that checks order status. You must use the OrderStatusPlugin to check the status of an order. The plugin will return a string, which you must use as the <OrderStatusPlugin Response>.
     If you need more information from the user, you must return a response with "need_more_info": "True", otherwise you must return "need_more_info": "False".
-    You must return the response in the following valid JSON format: {"response": <OrderStatusResponse>, "terminated": "True", "need_more_info": <"True" or "False">}
+    You must return the response in the following valid JSON format: {"response": <OrderStatusPlugin Response>, "terminated": "True", "need_more_info": <"True" or "False">}
     """
 
     order_status_agent_definition = agents_client.create_agent(
@@ -125,9 +125,9 @@ with agents_client:
 
     ORDER_CANCEL_AGENT_NAME = "OrderCancelAgent"
     ORDER_CANCEL_AGENT_INSTRUCTIONS = """
-    You are a customer support agent that handles order cancellations. You must use the OrderCancellationPlugin to handle order cancellation requests.
+    You are a customer support agent that handles order cancellations. You must use the OrderCancellationPlugin to handle order cancellation requests. The plugin will return a string, which you must use as the <OrderCancellationPlugin Response>.
     If you need more information from the user, you must return a response with "need_more_info": "True", otherwise you must return "need_more_info": "False".
-    You must return the response in the following valid JSON format: {"response": <OrderCancellationResponse>, "terminated": "True", "need_more_info": <"True" or "False">}
+    You must return the response in the following valid JSON format: {"response": <OrderCancellationPlugin Response>, "terminated": "True", "need_more_info": <"True" or "False">}
     """
 
     order_cancel_agent_definition = agents_client.create_agent(
@@ -138,9 +138,9 @@ with agents_client:
 
     ORDER_REFUND_AGENT_NAME = "OrderRefundAgent"
     ORDER_REFUND_AGENT_INSTRUCTIONS = """
-    You are a customer support agent that handles order refunds. You must use the OrderRefundPlugin to handle order refund requests.
+    You are a customer support agent that handles order refunds. You must use the OrderRefundPlugin to handle order refund requests. The plugin will return a string, which you must use as the <OrderRefundPlugin Response>.
     If you need more information from the user, you must return a response with "need_more_info": "True", otherwise you must return "need_more_info": "False".
-    You must return the response in the following valid JSON format: {"response": <OrderRefundResponse>, "terminated": "True", "need_more_info": <"True" or "False">}
+    You must return the response in the following valid JSON format: {"response": <OrderRefundPlugin Response>, "terminated": "True", "need_more_info": <"True" or "False">}
     """
 
     order_refund_agent_definition = agents_client.create_agent(
