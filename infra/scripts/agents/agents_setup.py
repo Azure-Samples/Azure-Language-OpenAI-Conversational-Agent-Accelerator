@@ -16,6 +16,7 @@ AGENTS_PROJECT_ENDPOINT = os.environ.get('AGENTS_PROJECT_ENDPOINT')
 AGENTS_API_VERSION = '2025-05-15-preview'
 AGENTS_MODEL_NAME = os.environ.get('AOAI_DEPLOYMENT')
 AGENTS_CONFIG_FILE = 'agents_config.yaml'
+TRIAGE_AGENT_INJECT_EXAMPLES = os.environ.get('TRIAGE_AGENT_INJECT_EXAMPLES', 'true').lower() == 'true'
 
 # Create agents client:
 AGENTS_CLIENT = AgentsClient(
@@ -78,10 +79,12 @@ with open(AGENTS_CONFIG_FILE, 'r') as fp:
 
 # Create Triage Agent:
 print('Creating Triage Agent...')
-triage_agent_parameters = {
-    'clu_example_intents': ', '.join(get_clu_intents()),
-    'cqa_example_questions': ', '.join(get_cqa_questions())
-}
+triage_agent_parameters = {}
+if TRIAGE_AGENT_INJECT_EXAMPLES:
+    triage_agent_parameters = {
+        'clu_example_intents': ', '.join(get_clu_intents()),
+        'cqa_example_questions': ', '.join(get_cqa_questions())
+    }
 create_agent(agents_config['triage_agent'], triage_agent_parameters)
 
 # Cleanup:
