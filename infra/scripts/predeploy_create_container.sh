@@ -1,7 +1,7 @@
 #!/bin/bash
 # `az login` should have been run before executing this script:
 
-set -e
+set -ex
 
 cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
