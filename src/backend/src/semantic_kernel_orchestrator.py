@@ -23,37 +23,38 @@ class SelectionStrategy(SequentialSelectionStrategy):
         """
         last = history[-1] if history else None
 
-        print("last message:", last)
-        print("last message name:", last.name if last else None)
+        # print("last message:", last)
+        # print("last message name:", last.name if last else None)
                 
         if not last or last.role == AuthorRole.USER or last is None:
             # If the last message is from the user, select the triage agent
-            print("Passing to TriageAgent")
+            print("[SYSTEM]: Last message is from the USER, routing to TriageAgent...")
             return next((a for a in agents if a.name == "TriageAgent"), None)
         
         elif last.name == "TriageAgent":
-            print("Last message is from TriageAgent, checking content...")
+            print("[SYSTEM]: Last message is from TriageAgent, checking if agent returned a CQA or CLU result...")
             try:
                 parsed = json.loads(last.content)
-                print("Parsed content:", parsed)
+                # print("Parsed content:", parsed)
                 if parsed.get("type") == "cqa_result":
+                    print("[SYSTEM]: CQA result received, determining final response...")
                     return None  # End early
+                
                 if parsed.get("type") == "clu_result":
-                    print("Realizing intent from CLU result")
+                    print("[SYSTEM]: CLU result received, checking intent and entities...")
                     intent = parsed["response"]["result"]["prediction"]["topIntent"]
-                    print("intent:", intent)
-                    print("Passing to head agent")
+                    print("[TriageAgent]: Detected Intent:", intent)
+                    print("[TriageAgent]: Identified Intent and Entities, routing to HeadSupportAgent for custom agent selection... \n")
                     return next((agent for agent in agents if agent.name == "HeadSupportAgent"), None)
             except Exception:
                 return None
 
         elif last.name == "HeadSupportAgent":
-            print("Last message is from HeadSupportAgent, checking content...")
+            print("[SYSTEM] Last message is from HeadSupportAgent, choosing custom agent...")
             try:
                 parsed = json.loads(last.content)
-                print("Parsed content:", parsed)
                 route = parsed.get("target_agent")
-                print("Route to custom agent:", route)
+                print("[HeadSupportAgent] Routing to target custom agent:", route, "\n")
                 return next((a for a in agents if a.name == route), None)
             except Exception:
                 return None
@@ -113,7 +114,7 @@ class SemanticKernelOrchestrator:
         order_status_agent = AzureAIAgent(
         client=self.client,
         definition=order_status_agent_definition,
-        description="An agent that checks order status",
+        description="An agent that checks order status and it must use the OrderStatusPlugin to check the status of an order. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderStatusResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
         plugins=[OrderStatusPlugin()],
         )
 
@@ -121,7 +122,7 @@ class SemanticKernelOrchestrator:
         order_cancel_agent = AzureAIAgent(
         client=self.client,
         definition=order_cancel_agent_definition,
-        description="An agent that checks on cancellations",
+        description="An agent that checks on cancellations and it must use the OrderCancellationPlugin to handle order cancellation requests. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderCancellationResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
         plugins=[OrderCancellationPlugin()],
         )
 
@@ -129,7 +130,7 @@ class SemanticKernelOrchestrator:
         order_refund_agent = AzureAIAgent(
         client=self.client,
         definition=order_refund_agent_definition,
-        description="An agent that checks on refunds",
+        description="An agent that checks on refunds and it must use the OrderRefundPlugin to handle order refund requests. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderRefundResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
         plugins=[OrderRefundPlugin()],
         )
 
@@ -200,26 +201,27 @@ class SemanticKernelOrchestrator:
                 # Append the current log file to the chat
                 await self.agent_group_chat.add_chat_message(user_message)
             
-                print("User message added to chat:", user_message.content)
+                #print("User message added to chat:", user_message.content)
+                print(f'[USER]: Message added to chat: "{user_message.content}"\n')
                 # Invoke a response from the agents
                 async for response in self.agent_group_chat.invoke():
                     if response is None or not response.name:
                         continue
-                    print(f"{response.content}")
-                    final_response = response.content
+                    final_response = format_agent_response(response)
                 
                 final_response = json.loads(final_response)
 
                 # if CQA
                 if final_response.get("type") == "cqa_result":
-                    print("CQA result received, terminating chat.")
+                    print("[SYSTEM]: Final CQA result received, terminating chat.")
                     final_response = final_response['response']['answers'][0]['answer']
-                    print("final response is ", final_response)
+                    print("[SYSTEM]: Final response is ", final_response)
                     return final_response
+                
                 # if CLU
                 else:
-                    print("CLU result received, printing custom agent response.")
-                    print("final response is ", final_response['response'])
+                    print("[SYSTEM]: Final CLU result received, printing custom agent response...")
+                    print("[SYSTEM]: Final response is ", final_response['response'])
                     return final_response['response']
 
             except Exception as e:
@@ -237,4 +239,14 @@ class SemanticKernelOrchestrator:
         print("Max retries reached, returning last exception.")
         if last_exception:
             return {"error": last_exception}
+        
+def format_agent_response(response):
+    try:
+        # Pretty print the JSON response
+        formatted_content = json.dumps(json.loads(response.content), indent=2)
+        print(f"[{response.name}]: \n{formatted_content}\n")
+    except json.JSONDecodeError:
+        # Fallback to regular print if content is not JSON
+        print(f"[{response.name}]: {response.content}\n")
+    return response.content
         
