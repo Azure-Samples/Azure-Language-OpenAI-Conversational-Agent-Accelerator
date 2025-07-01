@@ -1,7 +1,7 @@
 #!/bin/bash
 # `az login` should have been run before executing this script:
 
-set -ex
+set -e
 
 cwd=$(pwd)
 script_dir=$(dirname $(realpath "$0"))
@@ -48,7 +48,7 @@ result=$(az container create \
     --protocol "TCP" \
     --cpu 1 \
     --memory 1 \
-    --dns-name-label "conv-agent-app" \
+    --dns-name-label "conv-agent-app-${RG_SUFFIX}" \
     --os-type "Linux" \
     --ip-address "Public" \
     --environment-variables \
