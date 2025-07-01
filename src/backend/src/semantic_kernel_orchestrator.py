@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+import os
 import json
 from semantic_kernel.agents import AzureAIAgent, AgentGroupChat
 from semantic_kernel.agents.strategies import TerminationStrategy, SequentialSelectionStrategy
@@ -9,6 +10,9 @@ from agents.order_cancel_plugin import OrderCancellationPlugin
 from semantic_kernel.contents import AuthorRole, ChatMessageContent
 from azure.ai.projects import AIProjectClient
 from typing import Callable
+
+# Define the confidence threshold for CLU intent recognition
+confidence_threshold = float(os.environ.get("CLU_CONFIDENCE_THRESHOLD", "0.5"))
 
 # Create custom selection strategy for the agent groupchat by sublcassing the SequentialSelection Strategy
 class SelectionStrategy(SequentialSelectionStrategy):
@@ -22,33 +26,47 @@ class SelectionStrategy(SequentialSelectionStrategy):
         """
         last = history[-1] if history else None
 
+        # Process user messages
         if not last or last.role == AuthorRole.USER or last is None:
-            # If the last message is from the user, select the triage agent
             print("[SYSTEM]: Last message is from the USER, routing to TriageAgent...")
             return next((a for a in agents if a.name == "TriageAgent"), None)
         
+        # Process triage agent mnessages
         elif last.name == "TriageAgent":
             print("[SYSTEM]: Last message is from TriageAgent, checking if agent returned a CQA or CLU result...")
             try:
                 parsed = json.loads(last.content)
-                # print("Parsed content:", parsed)
+
+                # Handle CQA results
                 if parsed.get("type") == "cqa_result":
                     print("[SYSTEM]: CQA result received, determining final response...")
                     return None  # End early
                 
+                # Handle CLU results
                 if parsed.get("type") == "clu_result":
-                    print("[SYSTEM]: CLU result received, checking intent and entities...")
+                    print("[SYSTEM]: CLU result received, checking intent, entities, and confidence ...")
                     intent = parsed["response"]["result"]["prediction"]["topIntent"]
-                    print("[TriageAgent]: Detected Intent:", intent)
-                    print("[TriageAgent]: Identified Intent and Entities, routing to HeadSupportAgent for custom agent selection... \n")
-                    return next((agent for agent in agents if agent.name == "HeadSupportAgent"), None)
+                    confidence = parsed["response"]["result"]["prediction"]["intents"][0]["confidenceScore"]
+
+                    # Filter based on confidence threshold:
+                    if confidence < confidence_threshold:
+                        print("CLU confidence threshold not met")
+                        raise ValueError("CLU confidence threshold not met")
+                    else:
+                        print("[TriageAgent]: Detected Intent:", intent)
+                        print("[TriageAgent]: Identified Intent and Entities, routing to HeadSupportAgent for custom agent selection... \n")
+                        # Route to HeadSupportAgent for custom agent selection
+                        return next((agent for agent in agents if agent.name == "HeadSupportAgent"), None)
             except Exception:
                 return None
 
+        # Process head support agent messages
         elif last.name == "HeadSupportAgent":
             print("[SYSTEM] Last message is from HeadSupportAgent, choosing custom agent...")
             try:
                 parsed = json.loads(last.content)
+
+                # Grab the target agent from the parsed content
                 route = parsed.get("target_agent")
                 print("[HeadSupportAgent] Routing to target custom agent:", route, "\n")
                 return next((a for a in agents if a.name == route), None)
@@ -56,8 +74,8 @@ class SelectionStrategy(SequentialSelectionStrategy):
                 return None
 
         return None
-    
-# Create the custom termination strategy for the agent groupchat by sublcassing the TerminationStrategy
+
+# Create the custom termination strategy for the agent groupchat by subclassing the TerminationStrategy
 class ApprovalStrategy(TerminationStrategy):
     """
     Custom termination strategy that ends the chat if it's from the custom action agent 
@@ -70,9 +88,11 @@ class ApprovalStrategy(TerminationStrategy):
         """
         last = history[-1] if history else None
 
+        # If history is empty, return False
         if not last:
             return False
         
+        # If the last message contains True for terminated or need_more_info, terminate
         try:
             parsed = json.loads(last.content)
             return parsed.get("terminated") == "True" or parsed.get("need_more_info") == "True"
@@ -178,15 +198,18 @@ class SemanticKernelOrchestrator:
                 automatic_reset=True,
             ),
         )
-    
-    async def initialize(self) -> None:
-        """
-        Initialize the semantic kernel orchestrator.
-        This method creates the agent group chat and initializes the agents.
-        """
-        await self.create_agent_group_chat()
+
         print("Agent group chat created successfully.")
         print("Agents initialized:", [agent.name for agent in self.agent_group_chat.agents])
+    
+    # async def initialize(self) -> None:
+    #     """
+    #     Initialize the semantic kernel orchestrator.
+    #     This method creates the agent group chat and initializes the agents.
+    #     """
+    #     await self.create_agent_group_chat()
+    #     print("Agent group chat created successfully.")
+    #     print("Agents initialized:", [agent.name for agent in self.agent_group_chat.agents])
 
     async def process_message(self, message_content: str) -> str:
         """
@@ -196,6 +219,7 @@ class SemanticKernelOrchestrator:
         retry_count = 0
         last_exception = None
 
+        # Use retry logic to handle potential errors during chat invocation
         while retry_count < self.max_retries:
             try:
                 # Create a user message content

@@ -88,11 +88,11 @@ def fallback_function(
 # Function to handle processing and orchestrating a chat message with utterance extraction, fallback handling, and PII redaction
 async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrator, chat_id: int) -> list[str]:
     responses = []
-    logging.warning(f"Processing message: {message} with chat_id: {chat_id}")
+    print(f"Processing message: {message} with chat_id: {chat_id}")
     try:
         # Handle PII redaction if enabled
         if PII_ENABLED:
-            logging.warning(f"Redacting PII for message: {message} with chat_id: {chat_id}")
+            print(f"Redacting PII for message: {message} with chat_id: {chat_id}")
             message = pii_redacter.redact(
                 text=message,
                 id=chat_id,
@@ -158,9 +158,9 @@ async def lifespan(app: FastAPI):
     # Setup
     try:
         logging.basicConfig(level=logging.WARNING)
-        logging.warning("Setting up Azure credentials and client...")
-        logging.warning(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
-        logging.warning(f"Using MODEL_NAME: {MODEL_NAME}")
+        print("Setting up Azure credentials and client...")
+        print(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
+        print(f"Using MODEL_NAME: {MODEL_NAME}")
         creds = DefaultAzureCredential(exclude_interactive_browser_credential=False)
         await creds.__aenter__()
 
@@ -168,7 +168,7 @@ async def lifespan(app: FastAPI):
         await client.__aenter__()
 
         orchestrator = SemanticKernelOrchestrator(client, MODEL_NAME, PROJECT_ENDPOINT, AGENT_IDS, fallback_function, 3)
-        await orchestrator.initialize()
+        await orchestrator.create_agent_group_chat()
 
         # Store in app state
         app.state.creds = creds
