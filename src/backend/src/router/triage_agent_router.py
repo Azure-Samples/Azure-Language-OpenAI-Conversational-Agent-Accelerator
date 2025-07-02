@@ -41,12 +41,12 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
         """
         # Process the agent run and handle retries
         max_retries = int(os.environ.get("MAX_AGENT_RETRY", 3))
-        
+
         # Initialize error return value
         error_return_value = {
             "error": ValueError("The run did not complete successfully.")
         }
-            
+
         # Create thread and process agent run with retries
         for attempt in range(1, max_retries + 1):
             try:
@@ -67,7 +67,7 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
                 _logger.error(f"Logging error {e}")
                 error_return_value["error"] = e
                 _logger.error(f"Agent run {attempt + 1} failed with exception: {e}. Retrying...")
-        
+
         # If all attempts fail, return the error
         return error_return_value
 
@@ -92,12 +92,13 @@ def create_thread(
         content=utterance,
     )
     _logger.info(f"Created message: {message['id']}")
-    
+
     return thread
+
 
 def handle_successful_run(
     agents_client: AgentsClient,
-    thread: AgentThread, 
+    thread: AgentThread,
     attempt: int
 ) -> dict:
     """
@@ -118,15 +119,16 @@ def handle_successful_run(
                 _logger.info(f"Agent response parsed successfully: {data}")
                 parsed_result = parse_response(data)
                 return parsed_result
-            
+
             # Raise error if agent response cannot be parsed
             except Exception as e:
                 _logger.error(f"Agent response failed with error: {e}")
                 raise ValueError(f"Failed to parse agent response: {e}")
-            
+
     # If no valid response found, raise an error to be handled by the caller
     _logger.error("No valid agent response found in the thread.")
     raise ValueError("No valid agent response found in the thread.")
+
 
 def parse_response(
     response: dict
@@ -156,4 +158,3 @@ def parse_response(
     parsed_result["api_response"] = response["response"]
 
     return parsed_result
-

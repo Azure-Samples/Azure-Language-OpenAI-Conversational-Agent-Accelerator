@@ -95,25 +95,29 @@ def parse_response(
     Parse CQA runtime response (JSON output).
     """
     confidence_threshold = float(os.environ.get("CQA_CONFIDENCE_THRESHOLD", "0.5"))
-    top_answer = response["answers"][0]
-    confidence = top_answer["confidenceScore"]
-    answer = top_answer["answer"]
-    answer_id = top_answer["id"]
+
+    answer = None
     question = None
+    confidence = None
     error = None
 
-    # Filter based on confidence threshold:
-    if confidence < confidence_threshold:
-        _logger.warning("CQA confidence threshold not met")
-        error = "CQA confidence threshold not met"
-
     # Filter based on answer id:
-    if answer_id == -1:
+    if len(response["answers"]) == 0 or response["answers"][0]["id"] == -1:
         # -1 means default answer was returned.
         _logger.warning("No answer found")
         error = "No answer found"
+
+    # Filter based on confidence threshold:
+    elif response["answers"][0]["confidenceScore"] < confidence_threshold:
+        _logger.warning("CQA confidence threshold not met")
+        error = "CQA confidence threshold not met"
+
+    # Happy path:
     else:
+        top_answer = response["answers"][0]
+        answer = top_answer["answer"]
         question = top_answer["questions"][0]
+        confidence = top_answer["confidenceScore"]
 
     return {
         "kind": "cqa_result",
