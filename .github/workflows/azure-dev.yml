@@ -24,8 +24,9 @@ jobs:
           AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          IS_GITHUB_WORKFLOW_RUN: ${{ vars.IS_GITHUB_WORKFLOW_RUN }}
-          TRIAGE_AGENT_INJECT_EXAMPLES: ${{ vars.TRIAGE_AGENT_INJECT_EXAMPLES }}
+          IS_GITHUB_WORKFLOW_RUN: 'true'
+          SKIP_CQA_SETUP: 'true'
+          TRIAGE_AGENT_INJECT_EXAMPLES: 'false'
 
           AZD_PARAM_ROUTER_TYPE: ${{ vars.AZD_PARAM_ROUTER_TYPE }}
           AZD_PARAM_GPT_MODEL_NAME: ${{ vars.AZD_PARAM_GPT_MODEL_NAME }}
