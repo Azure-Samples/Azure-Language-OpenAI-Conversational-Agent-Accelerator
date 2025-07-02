@@ -76,7 +76,7 @@ with agents_client:
             - To call the clu_api, the following parameter values **must** be used in the payload as a valid JSON object: {"api-version":"2023-04-01", "analysisInput":{"conversationItem":{"id":<id>,"participantId":<id>,"text":<user input>}},"parameters":{"projectName":"conv-assistant-clu","deploymentName":"clu-m1-d1"},"kind":"Conversation"}
             - You must validate the input to ensure it is a valid JSON object before calling the clu_api.
         - When you return answers from the cqa_api, format the response as JSON: {"type": "cqa_result", "response": {cqa_response}, "terminated": "True"} where cqa_response is the full JSON API response from the cqa_api without rewriting or removing any info. Return immediately
-        """
+    """
 
     triage_agent_definition = agents_client.create_agent(
         model=MODEL_NAME,
