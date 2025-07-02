@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 import os
 import json
 import logging
@@ -11,12 +13,15 @@ from pydantic import BaseModel
 from semantic_kernel_orchestrator import SemanticKernelOrchestrator
 from azure.identity.aio import DefaultAzureCredential
 from semantic_kernel.agents import AzureAIAgent
-from dotenv import load_dotenv
 from utils import get_azure_credential
 from aoai_client import AOAIClient, get_prompt
 
 from azure.search.documents import SearchClient
-load_dotenv()
+
+# Run locally with `uvicorn app:app --reload --host 127.0.0.1 --port 7000`
+# Comment out for local testing:
+# from dotenv import load_dotenv
+# load_dotenv()
 
 # Environment variables
 PROJECT_ENDPOINT = os.environ.get("AGENTS_PROJECT_ENDPOINT")
@@ -155,7 +160,7 @@ async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrato
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Setup
+    # Setup app
     try:
         logging.basicConfig(level=logging.WARNING)
         print("Setting up Azure credentials and client...")
@@ -190,8 +195,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
 
-# In order to test locally, run `npm run build` in the frontend directory to generate the static files
-# move the `dist` directory to `src/backend/src/`
+# In order to test uvicorn app locally:
+# 1) run `npm run build` in the frontend directory to generate the static files
+# 2) move the `dist` directory to `src/backend/src/`
 @app.get("/")
 async def serve_frontend():
     return FileResponse(os.path.join(DIST_DIR, "index.html"))
@@ -199,13 +205,10 @@ async def serve_frontend():
 # Define the chat endpoint
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
-    # orchestrator = app.state.orchestrator
-    # response = await orchestrator.process_message(request.message)
-    # logging.warning(f"Response from orchestrator: {response}")
-    # return JSONResponse(content={"messages": [response]}, status_code=200)
     try:
+        # Grab the orchestrator from app state and orchestrate chat message
         orchestrator = app.state.orchestrator
-        responses = await orchestrate_chat(request.message, orchestrator, chat_id=0)  # You might want to generate unique chat IDs
+        responses = await orchestrate_chat(request.message, orchestrator, chat_id=0)
         return JSONResponse(content={"messages": responses}, status_code=200)
     
     except Exception as e:
