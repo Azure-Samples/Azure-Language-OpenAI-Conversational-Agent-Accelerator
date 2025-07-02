@@ -201,15 +201,6 @@ class SemanticKernelOrchestrator:
 
         print("Agent group chat created successfully.")
         print("Agents initialized:", [agent.name for agent in self.agent_group_chat.agents])
-    
-    # async def initialize(self) -> None:
-    #     """
-    #     Initialize the semantic kernel orchestrator.
-    #     This method creates the agent group chat and initializes the agents.
-    #     """
-    #     await self.create_agent_group_chat()
-    #     print("Agent group chat created successfully.")
-    #     print("Agents initialized:", [agent.name for agent in self.agent_group_chat.agents])
 
     async def process_message(self, message_content: str) -> str:
         """
