@@ -26,13 +26,23 @@ from azure.search.documents import SearchClient
 # Environment variables
 PROJECT_ENDPOINT = os.environ.get("AGENTS_PROJECT_ENDPOINT")
 MODEL_NAME = os.environ.get("AOAI_DEPLOYMENT")
-AGENT_IDS = {
-    "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
-    "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
-    "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
-    "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
-    "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
-}
+CONFIG_DIR = os.environ.get("CONFIG_DIR", ".")
+config_file = os.path.join(CONFIG_DIR, "config.json")
+
+# Read config.json file
+if os.path.exists(config_file):
+    with open(config_file, "r") as f:
+        AGENT_IDS = json.load(f)
+else:
+    AGENT_IDS = {}
+
+# AGENT_IDS = {
+#     "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
+#     "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
+#     "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
+#     "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
+#     "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
+# }
 
 DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
 # log dist_dir

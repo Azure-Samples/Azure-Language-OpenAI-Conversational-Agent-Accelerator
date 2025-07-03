@@ -10,6 +10,8 @@ config = {}
 DELETE_OLD_AGENTS = os.environ.get("DELETE_OLD_AGENTS", "false").lower() == "true"
 PROJECT_ENDPOINT = os.environ.get("AGENTS_PROJECT_ENDPOINT")
 MODEL_NAME = os.environ.get("AOAI_DEPLOYMENT")
+CONFIG_DIR = os.environ.get("CONFIG_DIR", ".")
+config_file = os.path.join(CONFIG_DIR, "config.json")
 
 config['language_resource_url'] = os.environ.get("LANGUAGE_ENDPOINT")
 config['clu_project_name'] = os.environ.get("CLU_PROJECT_NAME")
@@ -158,4 +160,16 @@ with agents_client:
         "ORDER_REFUND_AGENT_ID": order_refund_agent_definition.id,
     }
 
-    print(json.dumps(agent_ids, indent=2))
+    # Write to config.json file
+    try:
+        # Ensure the config directory exists
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        
+        with open(config_file, 'w') as f:
+            json.dump(agent_ids, f, indent=2)
+        print(f"Agent IDs written to {config_file}")
+        print(json.dumps(agent_ids, indent=2))  
+    except Exception as e:
+        print(f"Error writing to {config_file}: {e}")
+        print(json.dumps(agent_ids, indent=2)) 
+        

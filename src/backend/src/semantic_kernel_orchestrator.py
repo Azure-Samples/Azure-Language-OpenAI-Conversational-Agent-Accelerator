@@ -134,39 +134,39 @@ class SemanticKernelOrchestrator:
         # Grab the agent definition from AI Foundry
         triage_agent_definition = await self.client.agents.get_agent(self.agent_ids["TRIAGE_AGENT_ID"])
         triage_agent = AzureAIAgent(
-        client=self.client,
-        definition=triage_agent_definition,
+            client=self.client,
+            definition=triage_agent_definition,
         )
 
         order_status_agent_definition = await self.client.agents.get_agent(self.agent_ids["ORDER_STATUS_AGENT_ID"])
         order_status_agent = AzureAIAgent(
-        client=self.client,
-        definition=order_status_agent_definition,
-        description="An agent that checks order status and it must use the OrderStatusPlugin to check the status of an order. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderStatusResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
-        plugins=[OrderStatusPlugin()],
+            client=self.client,
+            definition=order_status_agent_definition,
+            description="An agent that checks order status and it must use the OrderStatusPlugin to check the status of an order. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderStatusResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
+            plugins=[OrderStatusPlugin()],
         )
 
         order_cancel_agent_definition = await self.client.agents.get_agent(self.agent_ids["ORDER_CANCEL_AGENT_ID"])
         order_cancel_agent = AzureAIAgent(
-        client=self.client,
-        definition=order_cancel_agent_definition,
-        description="An agent that checks on cancellations and it must use the OrderCancellationPlugin to handle order cancellation requests. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderCancellationResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
-        plugins=[OrderCancellationPlugin()],
+            client=self.client,
+            definition=order_cancel_agent_definition,
+            description="An agent that checks on cancellations and it must use the OrderCancellationPlugin to handle order cancellation requests. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderCancellationResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
+            plugins=[OrderCancellationPlugin()],
         )
 
         order_refund_agent_definition = await self.client.agents.get_agent(self.agent_ids["ORDER_REFUND_AGENT_ID"])
         order_refund_agent = AzureAIAgent(
-        client=self.client,
-        definition=order_refund_agent_definition,
-        description="An agent that checks on refunds and it must use the OrderRefundPlugin to handle order refund requests. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderRefundResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
-        plugins=[OrderRefundPlugin()],
+            client=self.client,
+            definition=order_refund_agent_definition,
+            description="An agent that checks on refunds and it must use the OrderRefundPlugin to handle order refund requests. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderRefundResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
+            plugins=[OrderRefundPlugin()],
         )
 
         head_support_agent_definition = await self.client.agents.get_agent(self.agent_ids["HEAD_SUPPORT_AGENT_ID"])
         head_support_agent = AzureAIAgent(
-        client=self.client,
-        definition=head_support_agent_definition,
-        description="A head support agent that routes inquiries to the proper custom agent. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
+            client=self.client,
+            definition=head_support_agent_definition,
+            description="A head support agent that routes inquiries to the proper custom agent. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
         )
 
         print("Agents initialized successfully.")
