@@ -25,7 +25,7 @@
           {
             "name": "api-version",
             "in": "query",
-            "description": "The API version to use for this operation. Value must be `${CLU_API_VERSION}`.",
+            "description": "The API version to use for this operation. Value must be '${CLU_API_VERSION}'.",
             "required": true,
             "schema": {
               "minLength": 1,
@@ -867,11 +867,11 @@
         "properties": {
           "projectName": {
             "type": "string",
-            "description": "The name of the project to use. Value must be `${CLU_PROJECT_NAME}`."
+            "description": "The name of the project to use."
           },
           "deploymentName": {
             "type": "string",
-            "description": "The name of the deployment to use. Value must be `${CLU_DEPLOYMENT_NAME}`."
+            "description": "The name of the deployment to use."
           },
           "StringIndexType": {
             "type": "string",
@@ -3025,7 +3025,7 @@
           },
           "text": {
             "type": "string",
-            "description": "The text input. Value must be the exact user input."
+            "description": "The text input."
           }
         },
         "description": "The text modality of an input conversation."
@@ -3595,7 +3595,7 @@
       "Azure.Core.Foundations.ApiVersionParameter": {
         "name": "api-version",
         "in": "query",
-        "description": "The API version to use for this operation. Value must be `${CLU_API_VERSION}`.",
+        "description": "The API version to use for this operation.",
         "required": true,
         "schema": {
           "minLength": 1,
