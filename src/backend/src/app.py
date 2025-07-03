@@ -29,13 +29,14 @@ MODEL_NAME = os.environ.get("AOAI_DEPLOYMENT")
 CONFIG_DIR = os.environ.get("CONFIG_DIR", ".")
 config_file = os.path.join(CONFIG_DIR, "config.json")
 
-# Read config.json file
+# Read config.json file from the config directory
 if os.path.exists(config_file):
     with open(config_file, "r") as f:
         AGENT_IDS = json.load(f)
 else:
     AGENT_IDS = {}
 
+# Comment out for local testing:
 # AGENT_IDS = {
 #     "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
 #     "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),

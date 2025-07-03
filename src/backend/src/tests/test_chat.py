@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 import pytest
 import os
 import sys
@@ -6,6 +8,7 @@ import requests
 import time
 from typing import Generator, List
 
+# Test cases for the chat endpoint
 TEST_CASES = [
     {
         "name": "order_status_single_utterance",
@@ -28,9 +31,18 @@ TEST_CASES = [
         "expected_response": [
             "Contoso Outdoors is proud to offer a 30 day refund policy. Return unopened, unused products within 30 days of purchase to any Contoso Outdoors store for a full refund."
         ]
+    },
+    {
+        "name": "multiple_utterances",
+        "input": "What's the status of order 0913280918409? Please cancel my order 62346?",
+        "expected_response": [
+            "Order 0913280918409 is shipped and will arrive in 2-3 days.",
+            "Cancellation for order 62346 has been processed successfully."
+        ]
     }
 ]
 
+# Launch the FastAPI server using uvicorn for testing purposes
 @pytest.fixture(scope="session")
 def uvicorn_server() -> Generator:
     """Start uvicorn server for testing"""
@@ -62,7 +74,7 @@ def uvicorn_server() -> Generator:
     process.terminate()
     process.wait()
 
-# Test results tracking class
+# Test results tracking class for formatting and summarizing test results
 class TestResults:
     def __init__(self):
         self.passed: List[str] = []
@@ -91,12 +103,14 @@ class TestResults:
             print("\n✅ All tests passed!")
         print("="*50)
 
+# Fixture to track test results across the session
 @pytest.fixture(scope="session")
 def test_results():
     results = TestResults()
     yield results
     results.print_summary()
 
+# Test the chat endpoint with parameterized test cases
 @pytest.mark.parametrize("test_case", TEST_CASES, ids=lambda x: x["name"])
 def test_chat_endpoint(uvicorn_server: str, test_case: dict, test_results: TestResults):
     """Test chat endpoint responses"""
