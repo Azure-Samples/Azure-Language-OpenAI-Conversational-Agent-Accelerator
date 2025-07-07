@@ -37,13 +37,28 @@ else:
     AGENT_IDS = {}
 
 # Comment out for local testing:
-# AGENT_IDS = {
-#     "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
-#     "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
-#     "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
-#     "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
-#     "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
-# }
+AGENT_IDS = {
+    "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
+    "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
+    "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
+    "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
+    "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
+}
+
+# Check if all required agent IDs are present
+required_agents = [
+    "TRIAGE_AGENT_ID",
+    "HEAD_SUPPORT_AGENT_ID", 
+    "ORDER_STATUS_AGENT_ID",
+    "ORDER_CANCEL_AGENT_ID",
+    "ORDER_REFUND_AGENT_ID"
+]
+
+missing_agents = [agent for agent in required_agents if not AGENT_IDS.get(agent)]
+if missing_agents:
+    error_msg = f"Missing required agent IDs: {', '.join(missing_agents)}"
+    logging.error(error_msg)
+    raise ValueError(error_msg)
 
 DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
 # log dist_dir
@@ -177,21 +192,26 @@ async def lifespan(app: FastAPI):
         print("Setting up Azure credentials and client...")
         print(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
         print(f"Using MODEL_NAME: {MODEL_NAME}")
-        creds = DefaultAzureCredential(exclude_interactive_browser_credential=False)
-        await creds.__aenter__()
 
-        client = AzureAIAgent.create_client(credential=creds, endpoint=PROJECT_ENDPOINT)
-        await client.__aenter__()
+        async with DefaultAzureCredential(exclude_interactive_browser_credential=False) as creds:
+            async with AzureAIAgent.create_client(credential=creds, endpoint=PROJECT_ENDPOINT) as client:
+                orchestrator = SemanticKernelOrchestrator(
+                    client, 
+                    MODEL_NAME, 
+                    PROJECT_ENDPOINT, 
+                    AGENT_IDS, 
+                    fallback_function, 
+                    3
+                )
+                await orchestrator.create_agent_group_chat()
 
-        orchestrator = SemanticKernelOrchestrator(client, MODEL_NAME, PROJECT_ENDPOINT, AGENT_IDS, fallback_function, 3)
-        await orchestrator.create_agent_group_chat()
+                # Store in app state
+                app.state.creds = creds
+                app.state.client = client
+                app.state.orchestrator = orchestrator
 
-        # Store in app state
-        app.state.creds = creds
-        app.state.client = client
-        app.state.orchestrator = orchestrator
-
-        yield
+                # Yield control back to FastAPI lifespan
+                yield
 
     except Exception as e:
         logging.error(f"Error during setup: {e}")
