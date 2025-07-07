@@ -8,6 +8,8 @@ import requests
 import time
 from typing import Generator, List
 
+# Run tests with `pytest test_chat.py -s -v`
+
 # Test cases for the chat endpoint
 TEST_CASES = [
     {
@@ -74,76 +76,24 @@ def uvicorn_server() -> Generator:
     process.terminate()
     process.wait()
 
-# Test results tracking class for formatting and summarizing test results
-class TestResults:
-    def __init__(self):
-        self.passed: List[str] = []
-        self.failed: List[dict] = []
-
-    def add_pass(self, name: str):
-        self.passed.append(name)
-
-    def add_fail(self, name: str, error: str):
-        self.failed.append({"name": name, "error": error})
-
-    def print_summary(self):
-        print("\n" + "="*50)
-        print("TEST SUMMARY")
-        print("="*50)
-        print(f"Total tests: {len(self.passed) + len(self.failed)}")
-        print(f"Passed: {len(self.passed)}")
-        print(f"Failed: {len(self.failed)}")
-        
-        if self.failed:
-            print("\nFailed tests:")
-            for fail in self.failed:
-                print(f"❌ {fail['name']}: {fail['error']}")
-        
-        if not self.failed:
-            print("\n✅ All tests passed!")
-        print("="*50)
-
-# Fixture to track test results across the session
-@pytest.fixture(scope="session")
-def test_results():
-    results = TestResults()
-    yield results
-    results.print_summary()
-
 # Test the chat endpoint with parameterized test cases
 @pytest.mark.parametrize("test_case", TEST_CASES, ids=lambda x: x["name"])
-def test_chat_endpoint(uvicorn_server: str, test_case: dict, test_results: TestResults):
+def test_chat_endpoint(uvicorn_server: str, test_case: dict):
     """Test chat endpoint responses"""
-    try:
-        # Make request
-        response = requests.post(
-            f"{uvicorn_server}/chat",
-            json={"message": test_case["input"]},
-            timeout=180
-        )
-        
-        # Print test info
-        print(f"\n{'='*50}")
-        print(f"Running test: {test_case['name']}")
-        print(f"Input: {test_case['input']}")
-        
-        # Check response
-        assert response.status_code == 200, f"Expected status 200, got {response.status_code}"
-        data = response.json()
-        
-        print(f"Expected: {test_case['expected_response']}")
-        print(f"Actual: {data['messages']}")
-        
-        # Verify response
-        assert data["messages"] == test_case["expected_response"], "Response mismatch"
-        
-        # Test passed
-        print(f"✅ PASSED: {test_case['name']}")
-        test_results.add_pass(test_case['name'])
-        
-    except Exception as e:
-        # Test failed
-        print(f"❌ FAILED: {test_case['name']}")
-        print(f"Error: {str(e)}")
-        test_results.add_fail(test_case['name'], str(e))
-        raise
+    # try:
+    #     # Make request
+    response = requests.post(
+        f"{uvicorn_server}/chat",
+        json={"message": test_case["input"]},
+        timeout=180
+    )
+    
+    # Check response
+    assert response.status_code == 200, f"Expected status 200, got {response.status_code}"
+    data = response.json()
+    
+    # Verify response
+    assert data["messages"] == test_case["expected_response"], (
+        f"Response mismatch for test '{test_case['name']}'. "
+        f"Expected: {test_case['expected_response']}, Actual: {data['messages']}"
+    )
