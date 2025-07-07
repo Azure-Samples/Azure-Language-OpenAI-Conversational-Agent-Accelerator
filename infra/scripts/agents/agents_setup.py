@@ -63,7 +63,8 @@ def create_agent(agent_config: dict, parameters: dict):
         model=AGENTS_MODEL_NAME,
         name=agent_config['name'],
         instructions=instructions,
-        tools=[tool_def for tool in tools for tool_def in tool.definitions]
+        tools=[tool_def for tool in tools for tool_def in tool.definitions],
+        temperature=0.2
     )
 
     print(f'Agent created: {agent_config['name']}, {agent.id}')

@@ -17,11 +17,9 @@ triage_agent:
       2. 'clu_api': this tool uses a pre-trained model to extract the intent and entities of an utterance.
         - Here are a few examples of intents/actions a user utterance may relate to where 'clu_api' should be called: ${clu_example_intents}.
         - When you return answers from 'clu_api', format the response as JSON: {"type": "clu_result", "response": {clu_response}}, where 'clu_response' is the full JSON API response from 'clu_api'.
-        - To call 'clu_api', the following parameters values should be used in the payload:
-            - 'projectName': value must be '${CLU_PROJECT_NAME}'.
-            - 'deploymentName': value must be '${CLU_DEPLOYMENT_NAME}'.
-            - 'text': value must be the exact user input.
-            - 'api-version': value must be '${CLU_API_VERSION}'.
+          - An example of a valid clu_response is {"kind": "ConversationResult", "result": {"query": "what's the status of order 1234", "prediction": {"topIntent": "OrderStatus", "projectKind": "Conversation", "intents": [{"category": "OrderStatus", "confidenceScore": 0.8545539}, {"category": "CancelOrder", "confidenceScore": 0.59596604}, {"category": "RefundStatus", "confidenceScore": 0.5501976}, {"category": "None", "confidenceScore": 0.33382362}], "entities": [{"category": "OrderId", "text": "1234", "offset": 27, "length": 4, "confidenceScore": 1, "resolutions": [{"resolutionKind": "NumberResolution", "numberKind": "Integer", "value": 1234}], "extraInformation": [{"extraInformationKind": "EntitySubtype", "value": "quantity.number"}]}]}}}
+          - To call the `clu_api`, the following parameter values **must** be used in the payload as a valid JSON object: {"api-version":"${CLU_API_VERSION}","analysisInput":{"conversationItem":{"id":<id>,"participantId":<id>,"text":<user-input>}},"parameters":{"projectName":"${CLU_PROJECT_NAME}","deploymentName":"${CLU_DEPLOYMENT_NAME}"},"kind":"Conversation"}
+          - You must validate the input to ensure it is a valid JSON object before calling the `clu_api`.
 
     Safety Information:
       - You must use ONE of the two tools to perform your task.

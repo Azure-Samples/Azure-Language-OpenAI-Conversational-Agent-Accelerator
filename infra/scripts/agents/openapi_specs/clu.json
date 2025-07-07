@@ -29,7 +29,8 @@
             "required": true,
             "schema": {
               "minLength": 1,
-              "type": "string"
+              "type": "string",
+              "default": "${CLU_API_VERSION}"
             }
           }
         ],
