@@ -19,7 +19,6 @@ python3 -m ensurepip --upgrade
 # Install deps:
 tdnf install -y tar
 tdnf install -y awk
-tdnf install -y jq
 
 # Install nodejs:
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
