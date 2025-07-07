@@ -37,13 +37,13 @@ else:
     AGENT_IDS = {}
 
 # Comment out for local testing:
-AGENT_IDS = {
-    "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
-    "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
-    "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
-    "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
-    "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
-}
+# AGENT_IDS = {
+#     "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
+#     "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
+#     "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
+#     "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
+#     "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
+# }
 
 # Check if all required agent IDs are present
 required_agents = [
