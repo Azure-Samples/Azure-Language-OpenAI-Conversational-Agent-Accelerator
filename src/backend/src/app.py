@@ -171,11 +171,11 @@ async def lifespan(app: FastAPI):
         print(f"Using AGENTS_PROJECT_ENDPOINT: {AGENTS_PROJECT_ENDPOINT}")
         print(f"Using AGENTS_MODEL_NAME: {AGENTS_MODEL_NAME}")
 
-        async with get_azure_credential() as creds:
+        async with get_azure_credential(is_async=True) as creds:
             async with AzureAIAgent.create_client(credential=creds, endpoint=AGENTS_PROJECT_ENDPOINT) as client:
                 orchestrator = SemanticKernelOrchestrator(
-                    client, 
-                    AGENTS_MODEL_NAME, 
+                    client,
+                    AGENTS_MODEL_NAME,
                     AGENTS_PROJECT_ENDPOINT,
                     AGENT_IDS,
                     fallback_function,
@@ -199,6 +199,7 @@ async def lifespan(app: FastAPI):
         # Teardown
         await client.__aexit__(None, None, None)
         await creds.__aexit__(None, None, None)
+
 
 # Create FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
