@@ -2,8 +2,9 @@
 # Licensed under the MIT License.
 import os
 import json
-from semantic_kernel.agents import AzureAIAgent, AgentGroupChat
+from semantic_kernel.agents import AzureAIAgent, AgentGroupChat, GroupChatOrchestration, RoundRobinGroupChatManager, GroupChatManager
 from semantic_kernel.agents.strategies import TerminationStrategy, SequentialSelectionStrategy
+from semantic_kernel.agents.runtime import InProcessRuntime
 from agents.order_status_plugin import OrderStatusPlugin
 from agents.order_refund_plugin import OrderRefundPlugin
 from agents.order_cancel_plugin import OrderCancellationPlugin
@@ -11,93 +12,249 @@ from semantic_kernel.contents import AuthorRole, ChatMessageContent
 from azure.ai.projects import AIProjectClient
 from typing import Callable
 
+import asyncio
+from semantic_kernel.agents import GroupChatManager, BooleanResult, StringResult, MessageResult
+from semantic_kernel.contents import ChatMessageContent, ChatHistory
+
 # Define the confidence threshold for CLU intent recognition
 confidence_threshold = float(os.environ.get("CLU_CONFIDENCE_THRESHOLD", "0.5"))
 
-# Create custom selection strategy for the agent groupchat by sublcassing the SequentialSelection Strategy
-class SelectionStrategy(SequentialSelectionStrategy):
-    async def select_agent(self, agents, history):
-        """
-        Multi-agent orchestration method for Semantic Kernel Agent Group Chat
-        This method decides how to select agent based on the current message and agent with custom logic
-        The two possible routes with this multi-agent orchestration are:
-            1) user query -> triage agent [CLU tool invoked] -> head support agent -> custom agent -> terminate chat and return custom agent answer.
-            2) user query -> triage agent [CQA tool invoked] -> terminate chat and return CQA answer.
-        """
-        last = history[-1] if history else None
+class CustomGroupChatManager(GroupChatManager):
+    async def filter_results(self, chat_history: ChatHistory) -> MessageResult:
+        if not chat_history:
+            return MessageResult(
+                result=ChatMessageContent(role="assistant", content="No messages in chat history."),
+                reason="Chat history is empty."
+            )
 
+        # Get the last message from the chat history
+        last_message = chat_history[-1]
+        print("[DEBUG]: Last message in chat history:", last_message.content)
+
+        return MessageResult(
+            result=ChatMessageContent(role="assistant", content=last_message.content),
+            reason="Returning the last agent's response."
+        )
+        # # Custom logic to filter or summarize chat results
+        # summary = "Summary of the discussion."
+        # return MessageResult(result=ChatMessageContent(role="assistant", content=summary), reason="Custom summary logic.")
+
+    async def should_request_user_input(self, chat_history: ChatHistory) -> BooleanResult:
+            # Custom logic to decide if user input is needed
+            return BooleanResult(result=False, reason="No user input required.")
+
+    # Function to create custom agent selection methods
+    async def select_next_agent(self, chat_history, participant_descriptions):
+        """
+        Multi-agent orchestration method for Semantic Kernel Agent Group Chat.
+        This method decides how to select the next agent based on the current message and agent with custom logic.
+        """
+        last_message = chat_history[-1] if chat_history else None
+        print("last message:", last_message)
         # Process user messages
-        if not last or last.role == AuthorRole.USER or last is None:
+        if not last_message or last_message.role == AuthorRole.USER:
             print("[SYSTEM]: Last message is from the USER, routing to TriageAgent...")
-            return next((a for a in agents if a.name == "TriageAgent"), None)
-        
-        # Process triage agent mnessages
-        elif last.name == "TriageAgent":
+            return StringResult(
+                result=next((agent for agent in participant_descriptions.keys() if agent == "TriageAgent"), None),
+                reason="Routing to TriageAgent for initial triage."
+            )
+    
+        # Process triage agent messages
+        elif last_message.name == "TriageAgent":
             print("[SYSTEM]: Last message is from TriageAgent, checking if agent returned a CQA or CLU result...")
             try:
-                parsed = json.loads(last.content)
-
+                parsed = json.loads(last_message.content)
+    
                 # Handle CQA results
                 if parsed.get("type") == "cqa_result":
                     print("[SYSTEM]: CQA result received, determining final response...")
-                    return None  # End early
-                
+                    return StringResult(
+                        result=None,
+                        reason="CQA result received, terminating chat."
+                    )
+    
                 # Handle CLU results
                 if parsed.get("type") == "clu_result":
-                    print("[SYSTEM]: CLU result received, checking intent, entities, and confidence ...")
+                    print("[SYSTEM]: CLU result received, checking intent, entities, and confidence...")
                     intent = parsed["response"]["result"]["prediction"]["topIntent"]
                     confidence = parsed["response"]["result"]["prediction"]["intents"][0]["confidenceScore"]
-
-                    # Filter based on confidence threshold:
+    
+                    # Filter based on confidence threshold
                     if confidence < confidence_threshold:
                         print("CLU confidence threshold not met")
                         raise ValueError("CLU confidence threshold not met")
                     else:
                         print("[TriageAgent]: Detected Intent:", intent)
-                        print("[TriageAgent]: Identified Intent and Entities, routing to HeadSupportAgent for custom agent selection... \n")
-                        # Route to HeadSupportAgent for custom agent selection
-                        return next((agent for agent in agents if agent.name == "HeadSupportAgent"), None)
-            except Exception:
-                return None
-
+                        print("[TriageAgent]: Identified Intent and Entities, routing to HeadSupportAgent for custom agent selection...")
+                        return StringResult(
+                            result=next((agent for agent in participant_descriptions.keys() if agent == "HeadSupportAgent"), None),
+                            reason="Routing to HeadSupportAgent for custom agent selection."
+                        )
+            except Exception as e:
+                print(f"[SYSTEM]: Error processing TriageAgent message: {e}")
+                return StringResult(
+                    result=None,
+                    reason="Error processing TriageAgent message."
+                )
+    
         # Process head support agent messages
-        elif last.name == "HeadSupportAgent":
-            print("[SYSTEM] Last message is from HeadSupportAgent, choosing custom agent...")
+        elif last_message.name == "HeadSupportAgent":
+            print("[SYSTEM]: Last message is from HeadSupportAgent, choosing custom agent...")
             try:
-                parsed = json.loads(last.content)
-
+                parsed = json.loads(last_message.content)
+    
                 # Grab the target agent from the parsed content
                 route = parsed.get("target_agent")
-                print("[HeadSupportAgent] Routing to target custom agent:", route, "\n")
-                return next((a for a in agents if a.name == route), None)
-            except Exception:
-                return None
+                print("[HeadSupportAgent] Routing to target custom agent:", route)
+                return StringResult(
+                    result=next((agent for agent in participant_descriptions.keys() if agent == route), None),
+                    reason=f"Routing to target custom agent: {route}."
+                )
+            except Exception as e:
+                print(f"[SYSTEM]: Error processing HeadSupportAgent message: {e}")
+                return StringResult(
+                    result=None,
+                    reason="Error processing HeadSupportAgent message."
+                )
+    
+        # Default case
+        print("[SYSTEM]: No valid routing logic found, returning None.")
+        return StringResult(
+            result=None,
+            reason="No valid routing logic found."
+        )
+    
 
-        return None
+    # Function for requesting user input (TODO: Implement this after migration is completed)
+    async def request_user_input(self, chat_history, participant_descriptions):
+        return await super().request_user_input(chat_history, participant_descriptions)
 
-# Create the custom termination strategy for the agent groupchat by subclassing the TerminationStrategy
-class ApprovalStrategy(TerminationStrategy):
-    """
-    Custom termination strategy that ends the chat if it's from the custom action agent 
-    or if the triage agent returns a CQA result.
-    """
-    async def should_agent_terminate(self, agent, history):
+    # Function to check for termination
+    async def should_terminate(self, chat_history):
         """
-        Check if the agent should terminate based on the last message.
-        If the last message is from the custom action agent or if the triage agent returns a CQA result, terminate.
+        Custom termination logic for the agent group chat.
+        Ends the chat if the last message indicates termination or requires more information.
         """
-        last = history[-1] if history else None
-
+        # should_terminate = await super().should_terminate(chat_history)
+        # if should_terminate.result:
+        #     return should_terminate
+        last_message = chat_history[-1] if chat_history else None
+        print("[DEBUG]: checking termination of last message:", last_message.content if last_message else "No last message")
+        print("[DEBUG]: last message type:", type(last_message.content) if last_message else "No last message")
         # If history is empty, return False
-        if not last:
-            return False
+        if not last_message:
+            return BooleanResult(
+                result=False,
+                reason="No messages in chat history."
+            )
         
-        # If the last message contains True for terminated or need_more_info, terminate
+        # Check if the last message contains termination or need_more_info flags
         try:
-            parsed = json.loads(last.content)
-            return parsed.get("terminated") == "True" or parsed.get("need_more_info") == "True"
-        except Exception:
-            return False
+            parsed_content = json.loads(last_message.content)
+            terminated = parsed_content.get("terminated") == "True"
+            need_more_info = parsed_content.get("need_more_info") == "True"
+    
+            if terminated or need_more_info:
+                return BooleanResult(
+                    result=True,
+                    reason="Chat terminated due to agent response."
+                )
+        except json.JSONDecodeError:
+            return BooleanResult(
+                result=False,
+                reason="Failed to parse last message content."
+            )
+    
+        # Default case: no termination
+        return BooleanResult(
+            result=False,
+            reason="No termination flags found in last message."
+        )
+
+# Create custom selection strategy for the agent groupchat by subclassing the SequentialSelection Strategy
+# class SelectionStrategy(SequentialSelectionStrategy):
+#     async def select_agent(self, agents, history):
+#         """
+#         Multi-agent orchestration method for Semantic Kernel Agent Group Chat
+#         This method decides how to select agent based on the current message and agent with custom logic
+#         The two possible routes with this multi-agent orchestration are:
+#             1) user query -> triage agent [CLU tool invoked] -> head support agent -> custom agent -> terminate chat and return custom agent answer.
+#             2) user query -> triage agent [CQA tool invoked] -> terminate chat and return CQA answer.
+#         """
+#         last = history[-1] if history else None
+
+#         # Process user messages
+#         if not last or last.role == AuthorRole.USER or last is None:
+#             print("[SYSTEM]: Last message is from the USER, routing to TriageAgent...")
+#             return next((a for a in agents if a.name == "TriageAgent"), None)
+        
+#         # Process triage agent mnessages
+#         elif last.name == "TriageAgent":
+#             print("[SYSTEM]: Last message is from TriageAgent, checking if agent returned a CQA or CLU result...")
+#             try:
+#                 parsed = json.loads(last.content)
+
+#                 # Handle CQA results
+#                 if parsed.get("type") == "cqa_result":
+#                     print("[SYSTEM]: CQA result received, determining final response...")
+#                     return None  # End early
+                
+#                 # Handle CLU results
+#                 if parsed.get("type") == "clu_result":
+#                     print("[SYSTEM]: CLU result received, checking intent, entities, and confidence ...")
+#                     intent = parsed["response"]["result"]["prediction"]["topIntent"]
+#                     confidence = parsed["response"]["result"]["prediction"]["intents"][0]["confidenceScore"]
+
+#                     # Filter based on confidence threshold:
+#                     if confidence < confidence_threshold:
+#                         print("CLU confidence threshold not met")
+#                         raise ValueError("CLU confidence threshold not met")
+#                     else:
+#                         print("[TriageAgent]: Detected Intent:", intent)
+#                         print("[TriageAgent]: Identified Intent and Entities, routing to HeadSupportAgent for custom agent selection... \n")
+#                         # Route to HeadSupportAgent for custom agent selection
+#                         return next((agent for agent in agents if agent.name == "HeadSupportAgent"), None)
+#             except Exception:
+#                 return None
+
+#         # Process head support agent messages
+#         elif last.name == "HeadSupportAgent":
+#             print("[SYSTEM] Last message is from HeadSupportAgent, choosing custom agent...")
+#             try:
+#                 parsed = json.loads(last.content)
+
+#                 # Grab the target agent from the parsed content
+#                 route = parsed.get("target_agent")
+#                 print("[HeadSupportAgent] Routing to target custom agent:", route, "\n")
+#                 return next((a for a in agents if a.name == route), None)
+#             except Exception:
+#                 return None
+
+#         return None
+
+# # Create the custom termination strategy for the agent groupchat by subclassing the TerminationStrategy
+# class ApprovalStrategy(TerminationStrategy):
+#     """
+#     Custom termination strategy that ends the chat if it's from the custom action agent 
+#     or if the triage agent returns a CQA result.
+#     """
+#     async def should_agent_terminate(self, agent, history):
+#         """
+#         Check if the agent should terminate based on the last message.
+#         If the last message is from the custom action agent or if the triage agent returns a CQA result, terminate.
+#         """
+#         last = history[-1] if history else None
+
+#         # If history is empty, return False
+#         if not last:
+#             return False
+        
+#         # If the last message contains True for terminated or need_more_info, terminate
+#         try:
+#             parsed = json.loads(last.content)
+#             return parsed.get("terminated") == "True" or parsed.get("need_more_info") == "True"
+#         except Exception:
+#             return False
         
 # Custom multi-agent semantic kernel orchestrator
 class SemanticKernelOrchestrator:
@@ -136,6 +293,7 @@ class SemanticKernelOrchestrator:
         triage_agent = AzureAIAgent(
             client=self.client,
             definition=triage_agent_definition,
+            description="A triage agent that routes inquiries to the proper custom agent. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
         )
 
         order_status_agent_definition = await self.client.agents.get_agent(self.agent_ids["ORDER_STATUS_AGENT_ID"])
@@ -187,20 +345,24 @@ class SemanticKernelOrchestrator:
         print("Agents initialized:", [agent.name for agent in created_agents])
 
         # Create the agent group chat with the custom selection and termination strategies
-        self.agent_group_chat = AgentGroupChat(
-            agents=created_agents,
-            selection_strategy=SelectionStrategy(
-                agents=created_agents
-            ),
-            termination_strategy=ApprovalStrategy(
-                agents=created_agents,
-                maximum_iterations=10,
-                automatic_reset=True,
-            ),
+        # self.agent_group_chat = AgentGroupChat(
+        #     agents=created_agents,
+        #     selection_strategy=SelectionStrategy(
+        #         agents=created_agents
+        #     ),
+        #     termination_strategy=ApprovalStrategy(
+        #         agents=created_agents,
+        #         maximum_iterations=10,
+        #         automatic_reset=True,
+        #     ),
+        # )
+        self.orchestration = GroupChatOrchestration(
+            members=created_agents,
+            manager=CustomGroupChatManager(),
         )
 
         print("Agent group chat created successfully.")
-        print("Agents initialized:", [agent.name for agent in self.agent_group_chat.agents])
+        #print("Agents initialized:", [agent.name for agent in self.orchestration.])
 
     async def process_message(self, message_content: str) -> str:
         """
@@ -220,17 +382,28 @@ class SemanticKernelOrchestrator:
                 )
 
                 # Append the current log file to the chat
-                await self.agent_group_chat.add_chat_message(user_message)
+                # await self.agent_group_chat.add_chat_message(user_message)
             
-                #print("User message added to chat:", user_message.content)
-                print(f'[USER]: Message added to chat: "{user_message.content}"\n')
-                # Invoke a response from the agents
-                async for response in self.agent_group_chat.invoke():
-                    if response is None or not response.name:
-                        continue
-                    final_response = format_agent_response(response)
-                
-                final_response = json.loads(final_response)
+                # #print("User message added to chat:", user_message.content)
+                # print(f'[USER]: Message added to chat: "{user_message.content}"\n')
+                # # Invoke a response from the agents
+                # async for response in self.agent_group_chat.invoke():
+                #     if response is None or not response.name:
+                #         continue
+                #     final_response = format_agent_response(response)
+
+                runtime = InProcessRuntime()
+
+                try:
+                    runtime.start()
+                    orchestration_result = await self.orchestration.invoke(task=message_content, runtime=runtime)
+                    value = await orchestration_result.get()
+                except Exception as e:
+                    print(f"[SYSTEM]: Error invoking orchestration: {e}")
+                    raise e
+
+                print(value.content)
+                final_response = json.loads(value.content)
 
                 # if CQA
                 if final_response.get("type") == "cqa_result":
@@ -251,10 +424,11 @@ class SemanticKernelOrchestrator:
                 print(f"Error during chat invocation, retrying {retry_count}/{self.max_retries} times: {e}")
 
                 # reset chat state
-                self.agent_group_chat.clear_activity_signal()
-                await self.agent_group_chat.reset()
-                print("Chat reset due to error.")
-
+                # self.agent_group_chat.clear_activity_signal()
+                # await self.agent_group_chat.reset()
+                print("[SYSTEM]: Resetting chat state due to error.")
+                runtime.stop()  # Stop the runtime to ensure clean state
+                await asyncio.sleep(5)  # Wait before retrying
                 continue
             
         print("Max retries reached, returning last exception.")
