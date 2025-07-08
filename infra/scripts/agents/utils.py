@@ -7,6 +7,14 @@ from azure.ai.language.conversations.authoring import ConversationAuthoringClien
 from azure.ai.language.questionanswering.authoring import AuthoringClient
 from azure.core.rest import HttpRequest
 
+IS_GITHUB_WORKFLOW_RUN = os.environ.get('IS_GITHUB_WORKFLOW_RUN', 'false').lower() == 'true'
+
+
+def camel_to_snake(camel_str):
+    # Insert underscores before capital letters and convert to lowercase
+    snake_str = re.sub(r'(?<!^)(?=[A-Z])', '_', camel_str).lower()
+    return snake_str
+
 
 def bind_parameters(input_string: str, parameters: dict) -> str:
     """
@@ -68,6 +76,11 @@ def get_cqa_questions() -> list[str]:
         endpoint=os.environ['LANGUAGE_ENDPOINT'],
         credential=AzureCliCredential()
     )
+
+    if IS_GITHUB_WORKFLOW_RUN:
+        # Due to auth issues when running in GitHub workflow, skip:
+        print('Skipping CQA project polling...')
+        return []
 
     try:
         print(f'Getting questions from CQA project {project_name}...')

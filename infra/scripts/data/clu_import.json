@@ -19,10 +19,10 @@
                 "category": "OrderStatus"
             },
             {
-                "category": "RefundStatus"
+                "category": "OrderRefund"
             },
             {
-                "category": "CancelOrder"
+                "category": "OrderCancel"
             }
         ],
         "entities": [
@@ -76,7 +76,7 @@
             {
                 "text": "was i refunded for order 12344444",
                 "language": "en-us",
-                "intent": "RefundStatus",
+                "intent": "OrderRefund",
                 "entities": [
                     {
                         "category": "OrderId",
@@ -88,7 +88,7 @@
             {
                 "text": "can i refund order 56784567",
                 "language": "en-us",
-                "intent": "RefundStatus",
+                "intent": "OrderRefund",
                 "entities": [
                     {
                         "category": "OrderId",
@@ -100,7 +100,7 @@
             {
                 "text": "when will i be refunded for order 89089034",
                 "language": "en-us",
-                "intent": "RefundStatus",
+                "intent": "OrderRefund",
                 "entities": [
                     {
                         "category": "OrderId",
@@ -112,7 +112,7 @@
             {
                 "text": "when will i get my refund for 89898989",
                 "language": "en-us",
-                "intent": "RefundStatus",
+                "intent": "OrderRefund",
                 "entities": [
                     {
                         "category": "OrderId",
@@ -124,7 +124,7 @@
             {
                 "text": "did my refund for 12312344 go through",
                 "language": "en-us",
-                "intent": "RefundStatus",
+                "intent": "OrderRefund",
                 "entities": [
                     {
                         "category": "OrderId",
@@ -196,7 +196,7 @@
             {
                 "text": "Undo 12334444",
                 "language": "en-us",
-                "intent": "CancelOrder",
+                "intent": "OrderCancel",
                 "entities": [
                     {
                         "category": "OrderId",
@@ -208,7 +208,7 @@
             {
                 "text": "please stop order 55556666",
                 "language": "en-us",
-                "intent": "CancelOrder",
+                "intent": "OrderCancel",
                 "entities": [
                     {
                         "category": "OrderId",
@@ -220,7 +220,7 @@
             {
                 "text": "Can you cancel 12345678",
                 "language": "en-us",
-                "intent": "CancelOrder",
+                "intent": "OrderCancel",
                 "entities": [
                     {
                         "category": "OrderId",
@@ -232,7 +232,7 @@
             {
                 "text": "Cancel 888888",
                 "language": "en-us",
-                "intent": "CancelOrder",
+                "intent": "OrderCancel",
                 "entities": [
                     {
                         "category": "OrderId",
@@ -244,7 +244,7 @@
             {
                 "text": "Please cancel order 27787724",
                 "language": "en-us",
-                "intent": "CancelOrder",
+                "intent": "OrderCancel",
                 "entities": [
                     {
                         "category": "OrderId",

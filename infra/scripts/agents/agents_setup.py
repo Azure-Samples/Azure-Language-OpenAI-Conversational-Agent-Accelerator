@@ -8,7 +8,7 @@ from azure.ai.agents import AgentsClient
 from azure.ai.agents.models import (
     OpenApiTool, OpenApiManagedAuthDetails, OpenApiManagedSecurityScheme
 )
-from utils import bind_parameters, get_clu_intents, get_cqa_questions
+from utils import camel_to_snake, bind_parameters, get_clu_intents, get_cqa_questions
 
 ENV_FILE = os.environ.get('ENV_FILE')
 DELETE_OLD_AGENTS = os.environ.get('DELETE_OLD_AGENTS', 'false').lower() == 'true'
@@ -16,7 +16,6 @@ AGENTS_PROJECT_ENDPOINT = os.environ.get('AGENTS_PROJECT_ENDPOINT')
 AGENTS_API_VERSION = '2025-05-15-preview'
 AGENTS_MODEL_NAME = os.environ.get('AOAI_DEPLOYMENT')
 AGENTS_CONFIG_FILE = 'agents_config.yaml'
-TRIAGE_AGENT_INJECT_EXAMPLES = os.environ.get('TRIAGE_AGENT_INJECT_EXAMPLES', 'true').lower() == 'true'
 
 # Create agents client:
 AGENTS_CLIENT = AgentsClient(
@@ -26,7 +25,7 @@ AGENTS_CLIENT = AgentsClient(
 )
 
 
-def create_agent(agent_config: dict, parameters: dict):
+def create_agent(agent_config: dict, parameters: dict = {}):
     # Authentication details for OpenAPI connection:
     auth = OpenApiManagedAuthDetails(
         security_scheme=OpenApiManagedSecurityScheme(
@@ -45,25 +44,19 @@ def create_agent(agent_config: dict, parameters: dict):
             description=tool['description'],
             auth=auth
         ))
+    tool_defs = None if not tools else [
+        tool_def for tool in tools for tool_def in tool.definitions
+    ]
 
     # Generate instructions:
     instructions = bind_parameters(agent_config['instructions'], parameters)
-
-    if DELETE_OLD_AGENTS:
-        # Delete all existing agents with the same target name:
-        to_delete = [
-            agent for agent in AGENTS_CLIENT.list_agents() if agent.name == agent_config['name']
-        ]
-        for agent in to_delete:
-            print(f"Deleting existing agent: {agent.id}")
-            AGENTS_CLIENT.delete_agent(agent.id)
 
     # Create agent:
     agent = AGENTS_CLIENT.create_agent(
         model=AGENTS_MODEL_NAME,
         name=agent_config['name'],
         instructions=instructions,
-        tools=[tool_def for tool in tools for tool_def in tool.definitions],
+        tools=tool_defs,
         temperature=0.2
     )
 
@@ -74,19 +67,40 @@ def create_agent(agent_config: dict, parameters: dict):
         fp.write(f'export {agent_config['env_var']}="{agent.id}"\n')
 
 
+if DELETE_OLD_AGENTS:
+    print("Deleting all existing agents in project...")
+    to_delete = [agent for agent in AGENTS_CLIENT.list_agents()]
+    for agent in to_delete:
+        print(f"Deleting agent {agent.name}: {agent.id}")
+        AGENTS_CLIENT.delete_agent(agent.id)
+
 # Fetch agents config:
 with open(AGENTS_CONFIG_FILE, 'r') as fp:
     agents_config = yaml.safe_load(fp)
 
-# Create Triage Agent:
+# Query language projects for context:
+clu_intents = get_clu_intents()
+cqa_questions = get_cqa_questions()
+
+# Create TriageAgent:
 print('Creating Triage Agent...')
-triage_agent_parameters = {}
-if TRIAGE_AGENT_INJECT_EXAMPLES:
-    triage_agent_parameters = {
-        'clu_example_intents': ', '.join(get_clu_intents()),
-        'cqa_example_questions': ', '.join(get_cqa_questions())
-    }
-create_agent(agents_config['triage_agent'], triage_agent_parameters)
+triage_agent_parameters = {
+    'clu_example_intents': ', '.join(clu_intents),
+    'cqa_example_questions': ', '.join(cqa_questions)
+}
+create_agent(agents_config['triage'], triage_agent_parameters)
+
+# Create HeadSupportAgent (CLU custom intent routing):
+head_support_agent_parameters = {
+    'custom_intent_agent_names': ', '.join(
+            [f'{intent}Agent' for intent in clu_intents]
+        )
+}
+create_agent(agents_config['head_support'], head_support_agent_parameters)
+
+# Create custom intent agents:
+for agent_key in [camel_to_snake(intent) for intent in clu_intents]:
+    create_agent(agents_config[agent_key])
 
 # Cleanup:
 AGENTS_CLIENT.close()

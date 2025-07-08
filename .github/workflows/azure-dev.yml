@@ -26,7 +26,6 @@ jobs:
 
           IS_GITHUB_WORKFLOW_RUN: 'true'
           SKIP_LANGUAGE_SETUP: 'true'
-          TRIAGE_AGENT_INJECT_EXAMPLES: 'false'
 
           AZD_PARAM_ROUTER_TYPE: ${{ vars.AZD_PARAM_ROUTER_TYPE }}
           AZD_PARAM_GPT_MODEL_NAME: ${{ vars.AZD_PARAM_GPT_MODEL_NAME }}

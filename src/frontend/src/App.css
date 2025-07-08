@@ -113,3 +113,11 @@ body {
 .chat-submit-button:hover {
   background-color: #005bb5;
 }
+
+.page-content-container {
+  max-height: 100%;
+}
+
+#root {
+  max-height: 100%;
+}
