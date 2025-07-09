@@ -2,11 +2,12 @@
 # Licensed under the MIT License.
 from semantic_kernel.functions import kernel_function
 
-"""
-Sample plugin for processing cancellations in a customer support system - this plugin simulates the cancellation process
-and is used with a chat completion agent in a handoff orchestration system.
-"""
-class OrderCancellationPlugin:
+
+class OrderCancelPlugin:
+    """
+    Sample plugin for processing cancellations in a customer support system - this plugin simulates the cancellation process
+    and is used with a chat completion agent in a handoff orchestration system.
+    """
     @kernel_function
     def process_cancellation(self, order_id: str) -> str:
         """Process a cancellation for an order."""

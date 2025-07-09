@@ -11,61 +11,37 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from semantic_kernel_orchestrator import SemanticKernelOrchestrator
-from azure.identity.aio import DefaultAzureCredential
 from semantic_kernel.agents import AzureAIAgent
+from azure.identity.aio import DefaultAzureCredential
 from utils import get_azure_credential
 from aoai_client import AOAIClient, get_prompt
-
 from azure.search.documents import SearchClient
 
-# Run locally with `uvicorn app:app --reload --host 127.0.0.1 --port 7000`
+# Run locally with `uvicorn app:app --reload --host 127.0.0.1 --port 80`
 # Comment out for local testing:
 # from dotenv import load_dotenv
 # load_dotenv()
 
 # Environment variables
-PROJECT_ENDPOINT = os.environ.get("AGENTS_PROJECT_ENDPOINT")
-MODEL_NAME = os.environ.get("AOAI_DEPLOYMENT")
-CONFIG_DIR = os.environ.get("CONFIG_DIR", ".")
-config_file = os.path.join(CONFIG_DIR, "config.json")
+AGENTS_PROJECT_ENDPOINT = os.environ.get("AGENTS_PROJECT_ENDPOINT")
+AGENTS_MODEL_NAME = os.environ.get("AOAI_DEPLOYMENT")
+AGENT_IDS = {
+    "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
+    "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
+    "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
+    "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
+    "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
+}
 
-# Read config.json file from the config directory
-if os.path.exists(config_file):
-    with open(config_file, "r") as f:
-        AGENT_IDS = json.load(f)
-else:
-    AGENT_IDS = {}
-
-# Comment out for local testing:
-# AGENT_IDS = {
-#     "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
-#     "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
-#     "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
-#     "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
-#     "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
-# }
-
-# Check if all required agent IDs are present
-required_agents = [
-    "TRIAGE_AGENT_ID",
-    "HEAD_SUPPORT_AGENT_ID", 
-    "ORDER_STATUS_AGENT_ID",
-    "ORDER_CANCEL_AGENT_ID",
-    "ORDER_REFUND_AGENT_ID"
-]
-
-missing_agents = [agent for agent in required_agents if not AGENT_IDS.get(agent)]
-if missing_agents:
-    error_msg = f"Missing required agent IDs: {', '.join(missing_agents)}"
-    logging.error(error_msg)
-    raise ValueError(error_msg)
 
 DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
 # log dist_dir
 print(f"DIST_DIR: {DIST_DIR}")
 
+
 class ChatRequest(BaseModel):
     message: str
+
 
 # Initialize the Azure Search client
 search_client = SearchClient(
@@ -96,6 +72,7 @@ extract_client = AOAIClient(
 PII_ENABLED = os.environ.get("PII_ENABLED", "false").lower() == "true"
 print(f"PII_ENABLED: {PII_ENABLED}")
 
+
 # Fallback function (RAG) definition:
 def fallback_function(
     query: str,
@@ -115,6 +92,7 @@ def fallback_function(
         )
 
     return rag_client.chat_completion(query)
+
 
 # Function to handle processing and orchestrating a chat message with utterance extraction, fallback handling, and PII redaction
 async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrator, chat_id: int) -> list[str]:
@@ -156,7 +134,7 @@ async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrato
                 # Try semantic kernel orchestration first
                 orchestrator = app.state.orchestrator
                 response = await orchestrator.process_message(utterance)
-                
+
                 if isinstance(response, dict) and response.get("error"):
                     # If semantic kernel fails, use fallback
                     print(f"Semantic kernel failed, using fallback for: {utterance}")
@@ -184,23 +162,24 @@ async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrato
 
     return responses
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Setup app
     try:
         logging.basicConfig(level=logging.WARNING)
         print("Setting up Azure credentials and client...")
-        print(f"Using PROJECT_ENDPOINT: {PROJECT_ENDPOINT}")
-        print(f"Using MODEL_NAME: {MODEL_NAME}")
+        print(f"Using AGENTS_PROJECT_ENDPOINT: {AGENTS_PROJECT_ENDPOINT}")
+        print(f"Using AGENTS_MODEL_NAME: {AGENTS_MODEL_NAME}")
 
-        async with DefaultAzureCredential(exclude_interactive_browser_credential=False) as creds:
-            async with AzureAIAgent.create_client(credential=creds, endpoint=PROJECT_ENDPOINT) as client:
+        async with DefaultAzureCredential() as creds:
+            async with AzureAIAgent.create_client(credential=creds, endpoint=AGENTS_PROJECT_ENDPOINT) as client:
                 orchestrator = SemanticKernelOrchestrator(
-                    client, 
-                    MODEL_NAME, 
-                    PROJECT_ENDPOINT, 
-                    AGENT_IDS, 
-                    fallback_function, 
+                    client,
+                    AGENTS_MODEL_NAME,
+                    AGENTS_PROJECT_ENDPOINT,
+                    AGENT_IDS,
+                    fallback_function,
                     3
                 )
                 await orchestrator.create_agent_group_chat()
@@ -222,9 +201,11 @@ async def lifespan(app: FastAPI):
         await client.__aexit__(None, None, None)
         await creds.__aexit__(None, None, None)
 
+
 # Create FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
+
 
 # In order to test uvicorn app locally:
 # 1) run `npm run build` in the frontend directory to generate the static files
@@ -232,6 +213,7 @@ app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), na
 @app.get("/")
 async def serve_frontend():
     return FileResponse(os.path.join(DIST_DIR, "index.html"))
+
 
 # Define the chat endpoint
 @app.post("/chat")
@@ -241,7 +223,7 @@ async def chat_endpoint(request: ChatRequest):
         orchestrator = app.state.orchestrator
         responses = await orchestrate_chat(request.message, orchestrator, chat_id=0)
         return JSONResponse(content={"messages": responses}, status_code=200)
-    
+
     except Exception as e:
         logging.error(f"Error in chat endpoint: {e}")
         return JSONResponse(

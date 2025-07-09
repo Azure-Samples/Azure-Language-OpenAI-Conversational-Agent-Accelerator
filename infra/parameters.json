@@ -1,0 +1,10 @@
+{
+    "router_type": "TRIAGE_AGENT",
+    "gpt_model_name": "gpt-4o-mini",
+    "gpt_model_deployment_type": "GlobalStandard",
+    "gpt_model_capacity": "100",
+    "embedding_model_name": "text-embedding-ada-002",
+    "embedding_model_deployment_type": "GlobalStandard",
+    "embedding_model_capacity": "100",
+    "model_region": ""
+}

@@ -10,7 +10,7 @@ COPY frontend/index.html /app
 RUN npm install
 RUN npm run build
 
-FROM mcr.microsoft.com/azurelinux/base/python:3
+FROM mcr.microsoft.com/azurelinux/base/python:3.12
 
 WORKDIR /app
 
@@ -21,6 +21,6 @@ COPY backend/requirements.txt /app
 
 RUN pip install -r requirements.txt
 
-EXPOSE 7000
+EXPOSE 80
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7000"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]

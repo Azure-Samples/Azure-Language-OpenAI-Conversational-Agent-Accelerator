@@ -1,3 +1,5 @@
+pyyaml
 azure-identity
+azure-ai-agents
 azure-ai-language-conversations
 azure-ai-language-questionanswering

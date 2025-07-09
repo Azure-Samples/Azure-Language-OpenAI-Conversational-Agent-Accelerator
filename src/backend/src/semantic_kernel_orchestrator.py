@@ -6,7 +6,7 @@ from semantic_kernel.agents import AzureAIAgent, AgentGroupChat
 from semantic_kernel.agents.strategies import TerminationStrategy, SequentialSelectionStrategy
 from agents.order_status_plugin import OrderStatusPlugin
 from agents.order_refund_plugin import OrderRefundPlugin
-from agents.order_cancel_plugin import OrderCancellationPlugin
+from agents.order_cancel_plugin import OrderCancelPlugin
 from semantic_kernel.contents import AuthorRole, ChatMessageContent
 from azure.ai.projects import AIProjectClient
 from typing import Callable
@@ -124,7 +124,7 @@ class SemanticKernelOrchestrator:
         # Initialize plugins for custom agents
         self.order_status_plugin = OrderStatusPlugin()
         self.order_refund_plugin = OrderRefundPlugin()
-        self.order_cancel_plugin = OrderCancellationPlugin()
+        self.order_cancel_plugin = OrderCancelPlugin()
 
     async def initialize_agents(self) -> list:
         """
@@ -150,8 +150,8 @@ class SemanticKernelOrchestrator:
         order_cancel_agent = AzureAIAgent(
             client=self.client,
             definition=order_cancel_agent_definition,
-            description="An agent that checks on cancellations and it must use the OrderCancellationPlugin to handle order cancellation requests. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderCancellationResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
-            plugins=[OrderCancellationPlugin()],
+            description="An agent that checks on cancellations and it must use the OrderCancelPlugin to handle order cancellation requests. If you need more information from the user, you must return a response with 'need_more_info': 'True', otherwise you must return 'need_more_info': 'False'. You must return the response in the following valid JSON format: {'response': <OrderCancellationResponse>, 'terminated': 'True', 'need_more_info': <'True' or 'False'>}",
+            plugins=[OrderCancelPlugin()],
         )
 
         order_refund_agent_definition = await self.client.agents.get_agent(self.agent_ids["ORDER_REFUND_AGENT_ID"])

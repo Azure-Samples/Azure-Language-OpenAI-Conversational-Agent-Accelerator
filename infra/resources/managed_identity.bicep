@@ -15,3 +15,5 @@ resource managed_identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023
 
 //----------- Outputs -----------//
 output name string = managed_identity.name
+output id string = managed_identity.id
+output client_id string = managed_identity.properties.clientId

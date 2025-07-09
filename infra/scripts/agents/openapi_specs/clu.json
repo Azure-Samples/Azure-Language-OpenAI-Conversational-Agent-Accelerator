@@ -12,7 +12,7 @@
   },
   "servers": [
     {
-      "url": "${language_resource_url}/language"
+      "url": "${LANGUAGE_ENDPOINT}/language"
     }
   ],
   "tags": [],
@@ -25,12 +25,12 @@
           {
             "name": "api-version",
             "in": "query",
-            "description": "The version must be '2023-04-01'",
+            "description": "The API version to use for this operation. Value must be '${CLU_API_VERSION}'.",
             "required": true,
             "schema": {
               "minLength": 1,
               "type": "string",
-              "default": "2023-04-01"
+              "default": "${CLU_API_VERSION}"
             }
           }
         ],
@@ -3026,7 +3026,7 @@
           },
           "text": {
             "type": "string",
-            "description": "The text input"
+            "description": "The text input."
           }
         },
         "description": "The text modality of an input conversation."
