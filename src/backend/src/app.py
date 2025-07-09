@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from semantic_kernel_orchestrator import SemanticKernelOrchestrator
 from semantic_kernel.agents import AzureAIAgent
+from azure.identity.aio import DefaultAzureCredential
 from utils import get_azure_credential
 from aoai_client import AOAIClient, get_prompt
 from azure.search.documents import SearchClient
@@ -171,7 +172,7 @@ async def lifespan(app: FastAPI):
         print(f"Using AGENTS_PROJECT_ENDPOINT: {AGENTS_PROJECT_ENDPOINT}")
         print(f"Using AGENTS_MODEL_NAME: {AGENTS_MODEL_NAME}")
 
-        async with get_azure_credential(is_async=True) as creds:
+        async with DefaultAzureCredential() as creds:
             async with AzureAIAgent.create_client(credential=creds, endpoint=AGENTS_PROJECT_ENDPOINT) as client:
                 orchestrator = SemanticKernelOrchestrator(
                     client,

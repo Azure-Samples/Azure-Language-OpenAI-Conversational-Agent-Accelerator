@@ -83,7 +83,6 @@ clu_intents = get_clu_intents()
 cqa_questions = get_cqa_questions()
 
 # Create TriageAgent:
-print('Creating Triage Agent...')
 triage_agent_parameters = {
     'clu_example_intents': ', '.join(clu_intents),
     'cqa_example_questions': ', '.join(cqa_questions)
