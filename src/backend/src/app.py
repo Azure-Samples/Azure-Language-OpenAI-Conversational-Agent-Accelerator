@@ -15,7 +15,7 @@ from azure.identity.aio import DefaultAzureCredential
 from semantic_kernel.agents import AzureAIAgent
 from utils import get_azure_credential
 from aoai_client import AOAIClient, get_prompt
-
+from typing import List
 from azure.search.documents import SearchClient
 
 # Run locally with `uvicorn app:app --reload --host 127.0.0.1 --port 7000`
@@ -37,13 +37,13 @@ else:
     AGENT_IDS = {}
 
 # Comment out for local testing:
-# AGENT_IDS = {
-#     "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
-#     "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
-#     "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
-#     "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
-#     "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
-# }
+AGENT_IDS = {
+    "TRIAGE_AGENT_ID": os.environ.get("TRIAGE_AGENT_ID"),
+    "HEAD_SUPPORT_AGENT_ID": os.environ.get("HEAD_SUPPORT_AGENT_ID"),
+    "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
+    "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
+    "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
+}
 
 # Check if all required agent IDs are present
 required_agents = [
@@ -64,8 +64,13 @@ DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
 # log dist_dir
 print(f"DIST_DIR: {DIST_DIR}")
 
+# class Message(BaseModel):
+#     role: str
+#     content: str
+
 class ChatRequest(BaseModel):
     message: str
+    # history: List[Message]
 
 # Initialize the Azure Search client
 search_client = SearchClient(
@@ -117,7 +122,7 @@ def fallback_function(
     return rag_client.chat_completion(query)
 
 # Function to handle processing and orchestrating a chat message with utterance extraction, fallback handling, and PII redaction
-async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrator, chat_id: int) -> list[str]:
+async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrator, chat_id: int, message_history: list[dict]) -> list[str]:
     responses = []
     print(f"Processing message: {message} with chat_id: {chat_id}")
     try:
@@ -155,7 +160,7 @@ async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrato
 
                 # Try semantic kernel orchestration first
                 orchestrator = app.state.orchestrator
-                response = await orchestrator.process_message(utterance)
+                response = await orchestrator.process_message(utterance, message_history)
                 
                 if isinstance(response, dict) and response.get("error"):
                     # If semantic kernel fails, use fallback
@@ -237,9 +242,20 @@ async def serve_frontend():
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     try:
+        # print(request)
+        # # Extract the message and history from the request
+        # user_message = request.message
+        # chat_history = request.history  # List of previous messages
+
+        # print(f"user message {user_message}")
+        # print(f"chat history: {chat_history}")
+
+        # message_history_dicts = [msg.model_dump_json() for msg in chat_history]
+
+
         # Grab the orchestrator from app state and orchestrate chat message
         orchestrator = app.state.orchestrator
-        responses = await orchestrate_chat(request.message, orchestrator, chat_id=0)
+        responses = await orchestrate_chat(request.message, orchestrator, chat_id=0, message_history=message_history_dicts)
         return JSONResponse(content={"messages": responses}, status_code=200)
     
     except Exception as e:

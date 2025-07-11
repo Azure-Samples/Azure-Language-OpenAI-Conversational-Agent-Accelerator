@@ -26,7 +26,6 @@ class CustomGroupChatManager(GroupChatManager):
 
         # Get the last message from the chat history
         last_message = chat_history[-1]
-        print("[DEBUG]: Last message in chat history:", last_message.content)
 
         return MessageResult(
             result=ChatMessageContent(role="assistant", content=last_message.content),
@@ -43,7 +42,8 @@ class CustomGroupChatManager(GroupChatManager):
         This method decides how to select the next agent based on the current message and agent with custom logic.
         """
         last_message = chat_history[-1] if chat_history else None
-        print("last message:", last_message)
+        format_agent_response(last_message)
+
         # Process user messages
         if not last_message or last_message.role == AuthorRole.USER:
             print("[SYSTEM]: Last message is from the USER, routing to TriageAgent...")
@@ -136,9 +136,6 @@ class CustomGroupChatManager(GroupChatManager):
         Custom termination logic for the agent group chat.
         Ends the chat if the last message indicates termination or requires more information.
         """
-        # should_terminate = await super().should_terminate(chat_history)
-        # if should_terminate.result:
-        #     return should_terminate
         last_message = chat_history[-1] if chat_history else None
         # If history is empty, return False
         if not last_message:
@@ -264,15 +261,35 @@ class SemanticKernelOrchestrator:
         )
 
         print("Agent group chat created successfully.")
-        #print("Agents initialized:", [agent.name for agent in self.orchestration.])
 
-    async def process_message(self, message_content: str) -> str:
+    async def process_message(self, message_content: str, message_history: list[dict]) -> str:
         """
         Process a message in the agent group chat.
         This method creates a new agent group chat and processes the message.
         """
         retry_count = 0
         last_exception = None
+
+        full_context = f"Current question: {message_content} with history: {message_history}"
+
+        # message_content = json.loads(message_content) if isinstance(message_content, str) else message_content
+        # if not isinstance(message_content, dict):
+        #     raise ValueError("Message content must be a dictionary with 'message' and 'history' keys.")
+        
+        # # Ensure the message content has the required keys
+        # if "message" not in message_content or "history" not in message_content:
+        #     raise ValueError("Message content must contain 'message' and 'history' keys.")
+        
+        # # grab the user message and history from the content
+        # current_user_message = message_content["message"]
+        # chat_history = message_content["history"]
+
+        # # concatenate the chat history into a single string for processing
+        # formatted_history = "\n".join(
+        #     f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history
+        # )
+
+        # total_message_content = f"Current user message: {current_user_message}\nChat history:\n{formatted_history}"
 
         # Use retry logic to handle potential errors during chat invocation
         while retry_count < self.max_retries:
@@ -282,13 +299,14 @@ class SemanticKernelOrchestrator:
 
             try:
                 orchestration_result = await self.orchestration.invoke(
-                    task=message_content,
+                    task=full_context,
                     runtime=runtime,
                 )
 
                 try:
                     # Timeout to avoid indefinite hangs
-                    value = await asyncio.wait_for(orchestration_result.get(), timeout=35)
+                    # value = await asyncio.wait_for(orchestration_result.get(), timeout=35)
+                    value = await orchestration_result.get()
                     print(f"\n***** Result *****\n{value.content}")
 
                     final_response = json.loads(value.content)
@@ -331,7 +349,7 @@ def format_agent_response(response):
     try:
         # Pretty print the JSON response
         formatted_content = json.dumps(json.loads(response.content), indent=2)
-        print(f"[{response.name}]: \n{formatted_content}\n")
+        print(f"[{response.name if response.name else 'USER'}]: \n{formatted_content}\n")
     except json.JSONDecodeError:
         # Fallback to regular print if content is not JSON
         print(f"[{response.name}]: {response.content}\n")
