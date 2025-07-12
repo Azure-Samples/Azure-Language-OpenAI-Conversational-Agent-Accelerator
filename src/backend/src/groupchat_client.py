@@ -253,8 +253,8 @@ async def main():
             triage_agent = AzureAIAgent(
                 client=client,
                 definition=triage_agent_definition,
-                description=" "
-                #description="A triage agent that routes inquiries to the proper custom agent and you must actually call the API tool. YOU MUST USE THE INTENTS FROM THE TRAINED CLU MODEL. DO NOT JUST RETURN THE INPUT PAYLOAD. ENSURE YOU CALL THE CLU OR CQA API TOOLS. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
+                #description="A triage agent that routes inquiries to the proper custom agent."
+                description="A triage agent that routes inquiries to the proper custom agent and you must actually call the API tool. YOU MUST USE THE INTENTS FROM THE TRAINED CLU MODEL. DO NOT JUST RETURN THE INPUT PAYLOAD. ENSURE YOU CALL THE CLU OR CQA API TOOLS. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
             )
 
             order_status_agent_definition = await client.agents.get_agent(AGENT_IDS["ORDER_STATUS_AGENT_ID"])
@@ -311,10 +311,8 @@ async def main():
 
                 try:
                     task_json = {
-                            "current_question": "order id 1234",
+                            "current_question": "what's the return policy",
                             "history": [
-                                "user: I wanna refund my order",
-                                "bot: what's the order id"
                             ]
                         }
                     
