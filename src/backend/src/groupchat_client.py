@@ -191,11 +191,6 @@ class CustomGroupChatManager(GroupChatManager):
             result=None,
             reason="No valid routing logic found."
         )
-    
-
-    # Function for requesting user input (TODO: Implement this after migration is completed)
-    async def request_user_input(self, chat_history, participant_descriptions):
-        return await super().request_user_input(chat_history, participant_descriptions)
 
     # Function to check for termination
     async def should_terminate(self, chat_history):
@@ -233,7 +228,6 @@ class CustomGroupChatManager(GroupChatManager):
             result=False,
             reason="No termination flags found in last message."
         )
-    
 
 async def human_response_function(chat_histoy: ChatHistory) -> ChatMessageContent:
     """Function to get user input."""
@@ -253,7 +247,7 @@ async def main():
             triage_agent = AzureAIAgent(
                 client=client,
                 definition=triage_agent_definition,
-                #description="A triage agent that routes inquiries to the proper custom agent."
+                #description=""
                 description="A triage agent that routes inquiries to the proper custom agent and you must actually call the API tool. YOU MUST USE THE INTENTS FROM THE TRAINED CLU MODEL. DO NOT JUST RETURN THE INPUT PAYLOAD. ENSURE YOU CALL THE CLU OR CQA API TOOLS. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
             )
 
@@ -315,7 +309,8 @@ async def main():
                             "history": [
                             ]
                         }
-                    
+
+
                     task_string = json.dumps(task_json)
                     print(task_string)
                     print(type(task_string))
@@ -327,7 +322,6 @@ async def main():
 
                     try:
                         # Timeout to avoid indefinite hangs
-                        # value = await asyncio.wait_for(orchestration_result.get(), timeout=5)
                         value = await orchestration_result.get(timeout=60)
                         print(f"\n***** Result *****\n{value}")
                         break  # Success
@@ -342,6 +336,7 @@ async def main():
                         await runtime.stop_when_idle()
                     except Exception as e:
                         print(f"[SHUTDOWN ERROR]: Runtime failed to shut down cleanly: {e}")
+                        
                 await asyncio.sleep(2)  # short delay before retry
             else:
                 print(f"[FAILURE]: Max retries ({3}) reached. No successful response.")

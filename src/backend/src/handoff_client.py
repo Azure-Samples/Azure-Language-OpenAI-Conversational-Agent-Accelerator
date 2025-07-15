@@ -1,22 +1,14 @@
 import os
-import json
-from google_crc32c import value
-from semantic_kernel.agents import AzureAIAgent, GroupChatOrchestration, GroupChatManager, OrchestrationHandoffs, HandoffOrchestration
-from semantic_kernel.agents.strategies import TerminationStrategy, SequentialSelectionStrategy
+from semantic_kernel.agents import AzureAIAgent, OrchestrationHandoffs, HandoffOrchestration
 from semantic_kernel.agents.runtime import InProcessRuntime
 from agents.order_status_plugin import OrderStatusPlugin
 from agents.order_refund_plugin import OrderRefundPlugin
 from agents.order_cancel_plugin import OrderCancellationPlugin
 from semantic_kernel.contents import AuthorRole, ChatMessageContent
-from azure.ai.projects import AIProjectClient
-from typing import Callable
 from azure.identity.aio import DefaultAzureCredential
-from semantic_kernel.contents import AuthorRole, ChatMessageContent, FunctionCallContent, FunctionResultContent
-
-
+from semantic_kernel.contents import AuthorRole, ChatMessageContent
 import asyncio
-from semantic_kernel.agents import GroupChatManager, BooleanResult, StringResult, MessageResult
-from semantic_kernel.contents import ChatMessageContent, ChatHistory
+from semantic_kernel.contents import ChatMessageContent
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -55,7 +47,7 @@ async def main():
             triage_agent = AzureAIAgent(
                 client=client,
                 definition=triage_agent_definition,
-                description="A triage agent that routes inquiries to the proper custom agent "
+                description="A triage agent that routes inquiries to the proper custom agent"
                 #description="A triage agent that routes inquiries to the proper custom agent and you must actually call the API tool. YOU MUST USE THE INTENTS FROM THE TRAINED CLU MODEL. DO NOT JUST RETURN THE INPUT PAYLOAD. ENSURE YOU CALL THE CLU OR CQA API TOOLS. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
             )
 
@@ -102,17 +94,17 @@ async def main():
                 .add(    # Use add to add a single handoff
                     source_agent=order_refund_agent.name,
                     target_agent=triage_agent.name,
-                    description="Transfer to this agent if the issue is not refund related. Transfer if the issue is related to order status or cancellation. Transfer if the request is from the user",
+                    description="Transfer to this agent if the issue is NOT refund related. Transfer if the issue is related to order status or cancellation. Transfer if the request is from the user",
                 )
                 .add(
                     source_agent=order_status_agent.name,
                     target_agent=triage_agent.name,
-                    description="Transfer to this agent if the issue is not order status related. Transfer if the issue is related to refund or cancellation. Transfer if the request is from the user",
+                    description="Transfer to this agent if the issue is NOT order status related. Transfer if the issue is related to refund or cancellation. Transfer if the request is from the user",
                 )
                 .add(
                     source_agent=order_cancel_agent.name,
                     target_agent=triage_agent.name,
-                    description="Transfer to this agent if the issue is not order cancellation related. Transfer if the issue is related to refund or order status. Transfer if the request is from the user",
+                    description="Transfer to this agent if the issue is NOT order cancellation related. Transfer if the issue is related to refund or order status. Transfer if the request is from the user",
                 )
             )
 
@@ -132,7 +124,7 @@ async def main():
             runtime.start()
 
             orchestration_result = await handoff_orchestration.invoke(
-                task="A customer is on the line.",
+                task="What's the return policy",
                 runtime=runtime,
             )
             try:
@@ -146,4 +138,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    print("Agent orchestration completed successfully.")
+    print("Agent orchestration completed.")

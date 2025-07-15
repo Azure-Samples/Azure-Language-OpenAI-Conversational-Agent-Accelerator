@@ -15,9 +15,24 @@ const Chat = () => {
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages])
+    }, [messages]);
 
     const createSystemInput = (userMessageContent) => {
+        console.log(messages);
+
+        const lastTwoMessages = messages.slice(-2);
+
+        // Check if either message includes "please provide more information"
+        const containsFollowUpRequest = lastTwoMessages.some(msg =>
+            msg.content.toLowerCase().includes("please provide more information")
+        );
+
+        const historyString = containsFollowUpRequest
+            ? lastTwoMessages.map(msg => `${msg.role.toLowerCase()}: ${msg.content}`).join(", ")
+            : "empty";
+
+        const formattedString = `current_question: ${userMessageContent}, history: ${historyString}`;
+
         return {
             method: "POST",
             headers: {
@@ -25,7 +40,7 @@ const Chat = () => {
                 "Accept": "application/json"
             },
             body: JSON.stringify({
-                message: userMessageContent
+                message: formattedString,
             })
         }
     };

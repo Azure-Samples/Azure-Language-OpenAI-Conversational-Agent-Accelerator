@@ -3,7 +3,6 @@
 import os
 import json
 import logging
-from json import JSONDecodeError
 import pii_redacter
 from fastapi import FastAPI, HTTPException
 from fastapi.concurrency import asynccontextmanager
@@ -15,7 +14,6 @@ from azure.identity.aio import DefaultAzureCredential
 from semantic_kernel.agents import AzureAIAgent
 from utils import get_azure_credential
 from aoai_client import AOAIClient, get_prompt
-from typing import List
 from azure.search.documents import SearchClient
 
 # Run locally with `uvicorn app:app --reload --host 127.0.0.1 --port 7000`
@@ -64,13 +62,8 @@ DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
 # log dist_dir
 print(f"DIST_DIR: {DIST_DIR}")
 
-# class Message(BaseModel):
-#     role: str
-#     content: str
-
 class ChatRequest(BaseModel):
     message: str
-    # history: List[Message]
 
 # Initialize the Azure Search client
 search_client = SearchClient(
@@ -122,7 +115,7 @@ def fallback_function(
     return rag_client.chat_completion(query)
 
 # Function to handle processing and orchestrating a chat message with utterance extraction, fallback handling, and PII redaction
-async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrator, chat_id: int, message_history: list[dict]) -> list[str]:
+async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrator, chat_id: int) -> list[str]:
     responses = []
     print(f"Processing message: {message} with chat_id: {chat_id}")
     try:
@@ -135,52 +128,38 @@ async def orchestrate_chat(message: str, orchestrator: SemanticKernelOrchestrato
                 cache=True
             )
 
-        # Extract utterances
-        print(f"Extracting utterances from message: {message}")
-        utterances = extract_client.chat_completion(message)
-        print(f"Utterances: {utterances}")
+        try:
+            # Reconstruct PII if needed
+            if PII_ENABLED:
+                utterance = pii_redacter.reconstruct(
+                    text=message,
+                    id=chat_id,
+                    cache=True
+                )
 
-        if not isinstance(utterances, list):
-            try:
-                utterances = json.loads(utterances)
-            except JSONDecodeError:
-                logging.warning("Failed to parse utterances, possibly harmful content")
-                return ['I am unable to process this request.']
+            # Try semantic kernel orchestration first
+            orchestrator = app.state.orchestrator
+            response = await orchestrator.process_message(utterance)
+            
+            if isinstance(response, dict) and response.get("error"):
+                # If semantic kernel fails, use fallback
+                print(f"Semantic kernel failed, using fallback for: {utterance}")
+                response = fallback_function(
+                    utterance,
+                    "en",  # Assuming English for simplicity, adjust as needed
+                    chat_id
+                )
+                responses.append(response)
+            else:
+                responses.append(response)
 
-        # Process each utterance
-        for utterance in utterances:
-            try:
-                # Reconstruct PII if needed
-                if PII_ENABLED:
-                    utterance = pii_redacter.reconstruct(
-                        text=utterance,
-                        id=chat_id,
-                        cache=True
-                    )
-
-                # Try semantic kernel orchestration first
-                orchestrator = app.state.orchestrator
-                response = await orchestrator.process_message(utterance, message_history)
-                
-                if isinstance(response, dict) and response.get("error"):
-                    # If semantic kernel fails, use fallback
-                    print(f"Semantic kernel failed, using fallback for: {utterance}")
-                    response = fallback_function(
-                        utterance,
-                        "en",  # Assuming English for simplicity, adjust as needed
-                        chat_id
-                    )
-                    responses.append(response)
-                else:
-                    responses.append(response)
-
-            except Exception as e:
-                logging.error(f"Error processing utterance: {e}")
-                responses.append("I encountered an error processing part of your message.")
+        except Exception as e:
+            logging.error(f"Error processing utterance: {e}")
+            responses.append("I encountered an error processing part of your message.")
 
     except Exception as e:
         logging.error(f"Error in message processing: {e}")
-        responses = ["I apologize, but I'm having trouble processing your request."]
+        responses = ["I apologize, but I'm having trouble processing your request. Please try again."]
 
     finally:
         # Clean up PII cache if enabled
@@ -242,20 +221,9 @@ async def serve_frontend():
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     try:
-        # print(request)
-        # # Extract the message and history from the request
-        # user_message = request.message
-        # chat_history = request.history  # List of previous messages
-
-        # print(f"user message {user_message}")
-        # print(f"chat history: {chat_history}")
-
-        # message_history_dicts = [msg.model_dump_json() for msg in chat_history]
-
-
         # Grab the orchestrator from app state and orchestrate chat message
         orchestrator = app.state.orchestrator
-        responses = await orchestrate_chat(request.message, orchestrator, chat_id=0, message_history=message_history_dicts)
+        responses = await orchestrate_chat(request.message, orchestrator, chat_id=0)
         return JSONResponse(content={"messages": responses}, status_code=200)
     
     except Exception as e:
