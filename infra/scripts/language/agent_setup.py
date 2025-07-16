@@ -32,13 +32,13 @@ def create_tools(config):
     auth = OpenApiManagedAuthDetails(security_scheme=OpenApiManagedSecurityScheme(audience="https://cognitiveservices.azure.com/"))
 
     # Read in the OpenAPI spec from a file
-    with open("clu.json", "r") as f:
+    with open("clu_convai.json", "r") as f:
         clu_openapi_spec = json.loads(bind_parameters(f.read(), config))
 
     clu_api_tool = OpenApiTool(
-        name="clu_api",
+        name="clu_convai_api",
         spec=clu_openapi_spec,
-        description= "An API to extract intent from a given message - you MUST use version \"2023-04-01\" as this is extremely critical",
+        description= "An API to extract intent from a given message with multi-turn conversation history",
         auth=auth
     )
 
@@ -69,16 +69,63 @@ with agents_client:
     clu_api_tool, cqa_api_tool = create_tools(config)
     TRIAGE_AGENT_NAME = "TriageAgent"
     TRIAGE_AGENT_INSTRUCTIONS = """
-    You are a triage agent. Your goal is to answer questions and redirect message according to their intent. You have at your disposition 2 tools but can only use ONE:
-        1. cqa_api: to answer customer questions such as procedures and FAQs.
-        2. clu_api: to extract the intent of the message.
-        You must use the ONE of the tools to perform your task. You should only use one tool at a time, and do NOT chain the tools together. Only if the tools are not able to provide the information, you can answer according to your general knowledge. You must return the full API response for either tool and ensure it's a valid JSON.
-        - When you return answers from the clu_api, format the response as JSON: {"type": "clu_result", "response": {clu_response}, "terminated": "False"}, where clu_response is the full JSON API response from the clu_api without rewriting or removing any info.   Return immediately. Do not call the cqa_api afterwards.
-            - An example of a valid clu_response is {"kind": "ConversationResult", "result": {"query": "what's the status of order 1234", "prediction": {"topIntent": "OrderStatus", "projectKind": "Conversation", "intents": [{"category": "OrderStatus", "confidenceScore": 0.8545539}, {"category": "CancelOrder", "confidenceScore": 0.59596604}, {"category": "RefundStatus", "confidenceScore": 0.5501976}, {"category": "None", "confidenceScore": 0.33382362}], "entities": [{"category": "OrderId", "text": "1234", "offset": 27, "length": 4, "confidenceScore": 1, "resolutions": [{"resolutionKind": "NumberResolution", "numberKind": "Integer", "value": 1234}], "extraInformation": [{"extraInformationKind": "EntitySubtype", "value": "quantity.number"}]}]}}}
-            - To call the clu_api, the following parameter values **must** be used in the payload as a valid JSON object: {"api-version":"2023-04-01", "analysisInput":{"conversationItem":{"id":<id>,"participantId":<id>,"text":<user input>}},"parameters":{"projectName":"conv-assistant-clu","deploymentName":"clu-m1-d1"},"kind":"Conversation"}
-            - You must validate the input to ensure it is a valid JSON object before calling the clu_api.
-        - When you return answers from the cqa_api, format the response as JSON: {"type": "cqa_result", "response": {cqa_response}, "terminated": "True"} where cqa_response is the full JSON API response from the cqa_api without rewriting or removing any info. Return immediately
+    You are a triage agent. Your goal is to understand customer intent and redirect messages accordingly. You are required to use ONE of the OpenAPI tools provided. You have at your disposition 2 tools but can only use ONE:
+        1. **cqa_api**: to answer general FAQs and procedural questions that do NOT depend on a customer-specific context (e.g. “What's the return policy?”, “What are your store hours?”).
+        2. **clu_api**: to extract customer-specific intent or order-specific intent ("What is the status of order 1234" or "I want to cancel order 12345")
+
+    ---
+
+    Input Format:
+
+    You will receive input as a comma-delimited string representing a multi-turn conversation, formatted like this:
+
+    "current question: <current message>, history: user - <msg1>, bot - <msg2>, user - <msg3>"
+
+    If the <current message> is related to an FAQ, call the CQA API. Otherwise, this structured input allows you to analyze intent in multi-turn conversations using the CLU API.
+
+    ---
+    Available Tools:
+    ---
+    To use the CLU API: 
+    You must convert the input JSON into the following clu_api request format. You MUST keep the parameters field in the payload - this is extremely critical. Do NOT put analysisInput inside the parameters field. You must not add any additional fields. You must use the api version of 2025-05-15-preview - this is EXTREMELY CRITICAL as a query parameter (?api-version=2025-05-15-preview)
+
+    example payload = {{
+        "api-version": "2025-05-15-preview"
+        "kind": "ConversationalAI",
+        "parameters": {{
+            "projectName": {clu_project_name},
+            "deploymentName": {clu_deployment_name},
+            "stringIndexType": "Utf16CodeUnit"
+        }},
+        "analysisInput": {{
+            "conversations": [
+                {{
+                    "id": "order",
+                    "language": "en",
+                    "modality": "text",
+                    "conversationItems": [
+                        {{"participantId": "user", "id": "1", "text": "Hi!"}},
+                        {{"participantId": "bot", "id": "2", "text": "Hello, how can I help you?"}},
+                        {{"participantId": "user", "id": "3", "text": "I want to cancel an order"}},
+                        {{"participantId": "bot", "id": "4", "text": "Please provide your order number."}},
+                        {{"participantId": "user", "id": "5", "text": "Order id 1234"}}
+                    ]
+                }}
+            ]
+        }}
+    }}
+    Use all history messages followed by the current question in the conversationItems array, with unique increasing IDs. 
+
+    Return the raw API response in this format:
+
+    {{
+    "type": "clu_result",
+    "response": {{ <FULL CLU RESPONSE> }},
+    "terminated": "False"
+    }}
     """
+
+    TRIAGE_AGENT_INSTRUCTIONS = bind_parameters(TRIAGE_AGENT_INSTRUCTIONS, config)
 
     triage_agent_definition = agents_client.create_agent(
         model=MODEL_NAME,
@@ -115,8 +162,8 @@ with agents_client:
     ORDER_STATUS_AGENT_NAME = "OrderStatusAgent"
     ORDER_STATUS_AGENT_INSTRUCTIONS = """
     You are a customer support agent that checks order status. You must use the OrderStatusPlugin to check the status of an order. The plugin will return a string, which you must use as the <OrderStatusPlugin Response>.
-    If you need more information from the user, you must return a response with "need_more_info": "True", otherwise you must return "need_more_info": "False".
-    You must return the response in the following valid JSON format: {"response": <OrderStatusPlugin Response>, "terminated": "True", "need_more_info": <"True" or "False">}
+    If you need more info, the <OrderStatusResponse> should be "Please provide more information about your order so I can better assist you." and the JSON field "need_more_info" should be True.
+    You must return the response in the following valid JSON format: {"response": <OrderStatusResponse>, "terminated": "True", "need_more_info": <"True" or "False">}
     """
 
     order_status_agent_definition = agents_client.create_agent(
@@ -128,8 +175,8 @@ with agents_client:
     ORDER_CANCEL_AGENT_NAME = "OrderCancelAgent"
     ORDER_CANCEL_AGENT_INSTRUCTIONS = """
     You are a customer support agent that handles order cancellations. You must use the OrderCancellationPlugin to handle order cancellation requests. The plugin will return a string, which you must use as the <OrderCancellationPlugin Response>.
-    If you need more information from the user, you must return a response with "need_more_info": "True", otherwise you must return "need_more_info": "False".
-    You must return the response in the following valid JSON format: {"response": <OrderCancellationPlugin Response>, "terminated": "True", "need_more_info": <"True" or "False">}
+    If you need more info, the <OrderCancellationResponse> should be "Please provide more information about your order so I can better assist you." and the JSON field "need_more_info" should be True.
+    You must return the response in the following valid JSON format: {"response": <OrderCancellationResponse>, "terminated": "True", "need_more_info": <"True" or "False">}
     """
 
     order_cancel_agent_definition = agents_client.create_agent(
@@ -141,8 +188,8 @@ with agents_client:
     ORDER_REFUND_AGENT_NAME = "OrderRefundAgent"
     ORDER_REFUND_AGENT_INSTRUCTIONS = """
     You are a customer support agent that handles order refunds. You must use the OrderRefundPlugin to handle order refund requests. The plugin will return a string, which you must use as the <OrderRefundPlugin Response>.
-    If you need more information from the user, you must return a response with "need_more_info": "True", otherwise you must return "need_more_info": "False".
-    You must return the response in the following valid JSON format: {"response": <OrderRefundPlugin Response>, "terminated": "True", "need_more_info": <"True" or "False">}
+    If you need more info, the <OrderRefundResponse> should be "Please provide more information about your order so I can better assist you." and the JSON field "need_more_info" should be True.
+    You must return the response in the following valid JSON format: {"response": <OrderRefundResponse>, "terminated": "True", "need_more_info": <"True" or "False">}
     """
 
     order_refund_agent_definition = agents_client.create_agent(

@@ -13,34 +13,54 @@ from typing import Generator, List
 # Test cases for the chat endpoint
 TEST_CASES = [
     {
-        "name": "order_status_single_utterance",
-        "input": "What's the status of order 12345?",
-        "expected_response": ["Order 12345 is shipped and will arrive in 2-3 days."]
-    },
-    {
-        "name": "order_refund_single_utterance",
-        "input": "I want to check on my refund for order 0984?",
-        "expected_response": ["Refund for order 0984 has been processed successfully."]
-    },
-    {
-        "name": "order_cancel_single_utterance",
-        "input": "Please cancel my order 56789",
-        "expected_response": ["Cancellation for order 56789 has been processed successfully."]
-    },
-    {
         "name": "return_policy",
-        "input": "What is the return policy",
+        "current_question": "What is the return policy",
+        "history": "empty",
         "expected_response": [
             "Contoso Outdoors is proud to offer a 30 day refund policy. Return unopened, unused products within 30 days of purchase to any Contoso Outdoors store for a full refund."
         ]
     },
     {
-        "name": "multiple_utterances",
-        "input": "What's the status of order 0913280918409? Please cancel my order 62346?",
-        "expected_response": [
-            "Order 0913280918409 is shipped and will arrive in 2-3 days.",
-            "Cancellation for order 62346 has been processed successfully."
-        ]
+        "name": "order_status",
+        "current_question": "What is the status of order 12345?",
+        "history": "empty",
+        "expected_response": ["Order 12345 is shipped and will arrive in 2-3 days."]
+    },
+    {
+        "name": "order_refund",
+        "current_question": "I want to refund order 0984",
+        "history": "empty",
+        "expected_response": ["Refund for order 0984 has been processed successfully."]
+    },
+    {
+        "name": "order_cancel",
+        "current_question": "Please cancel my order 56789",
+        "history": "empty",
+        "expected_response": ["Cancellation for order 56789 has been processed successfully."]
+    },
+    {
+        "name": "need_more_info_refund",
+        "current_question": "Was I refunded for my order?",
+        "history": "empty",
+        "expected_response": ["Please provide more information about your order so I can better assist you."]
+    },
+    {
+        "name": "need_more_info_order_status",
+        "current_question": "I want to know the status of my order",
+        "history": "empty",
+        "expected_response": ["Please provide more information about your order so I can better assist you."]
+    },
+    {
+        "name": "need_more_info_order_cancel",
+        "current_question": "I want to cancel my order",
+        "history": "empty",
+        "expected_response": ["Please provide more information about your order so I can better assist you."]
+    },
+    {
+        "name": "second_pass_cancel",
+        "current_question": "order id 19328",
+        "history": "user: I want to cancel my order, system: Please provide more information about your order so I can better assist you.",
+        "expected_response": ["Cancellation for order 19328 has been processed successfully."]
     }
 ]
 
@@ -80,11 +100,14 @@ def uvicorn_server() -> Generator:
 @pytest.mark.parametrize("test_case", TEST_CASES, ids=lambda x: x["name"])
 def test_chat_endpoint(uvicorn_server: str, test_case: dict):
     """Test chat endpoint responses"""
-    # try:
-    #     # Make request
+
+    # Create formatted string for input
+    formatted_string = f"current question: {test_case["current_question"]}, history: {test_case["history"]}"
+    print(formatted_string)
+
     response = requests.post(
         f"{uvicorn_server}/chat",
-        json={"message": test_case["input"]},
+        json={"message": formatted_string},
         timeout=180
     )
     
