@@ -36,9 +36,9 @@ def create_tools(config):
         clu_openapi_spec = json.loads(bind_parameters(f.read(), config))
 
     clu_api_tool = OpenApiTool(
-        name="clu_convai_api",
+        name="clu_api",
         spec=clu_openapi_spec,
-        description= "An API to extract intent from a given message with multi-turn conversation history",
+        description= "This tool is used to extract intents and entities",
         auth=auth
     )
 
@@ -70,26 +70,20 @@ with agents_client:
     TRIAGE_AGENT_NAME = "TriageAgent"
     TRIAGE_AGENT_INSTRUCTIONS = """
     You are a triage agent. Your goal is to understand customer intent and redirect messages accordingly. You are required to use ONE of the OpenAPI tools provided. You have at your disposition 2 tools but can only use ONE:
-        1. **cqa_api**: to answer general FAQs and procedural questions that do NOT depend on a customer-specific context (e.g. “What's the return policy?”, “What are your store hours?”).
-        2. **clu_api**: to extract customer-specific intent or order-specific intent ("What is the status of order 1234" or "I want to cancel order 12345")
-
+            1. cqa_api: to answer general FAQs and procedural questions that do NOT depend on a customer-specific context (e.g. “What's the return policy?”, “What are your store hours?”).
+            2. **clu_api**: to extract customer-specific intent or order-specific intent ("What is the status of order 1234" or "I want to cancel order 12345")
     ---
-
     Input Format:
-
     You will receive input as a comma-delimited string representing a multi-turn conversation, formatted like this:
-
     "current question: <current message>, history: user - <msg1>, bot - <msg2>, user - <msg3>"
-
     If the <current message> is related to an FAQ, call the CQA API. Otherwise, this structured input allows you to analyze intent in multi-turn conversations using the CLU API.
-
     ---
     Available Tools:
     ---
     To use the CLU API: 
     You must convert the input JSON into the following clu_api request format. You MUST keep the parameters field in the payload - this is extremely critical. Do NOT put analysisInput inside the parameters field. You must not add any additional fields. You must use the api version of 2025-05-15-preview - this is EXTREMELY CRITICAL as a query parameter (?api-version=2025-05-15-preview)
-
-    example payload = {
+    No matter what, you must always use the "api-version": "2025-05-15-preview"
+    payload = {
         "api-version": "2025-05-15-preview"
         "kind": "ConversationalAI",
         "parameters": {
@@ -108,21 +102,26 @@ with agents_client:
                         {"participantId": "bot", "id": "2", "text": "Hello, how can I help you?"},
                         {"participantId": "user", "id": "3", "text": "I want to cancel an order"},
                         {"participantId": "bot", "id": "4", "text": "Please provide your order number."},
-                        {"participantId": "user", "id": "5", "text": "Order id 1234"}
+                        {"participantId": "user", "id": "5", "text": "Order id 1234"},
                     ]
                 }
             ]
         }
     }
     Use all history messages followed by the current question in the conversationItems array, with unique increasing IDs. 
-
     Return the raw API response in this format:
-
     {
     "type": "clu_result",
     "response": { <FULL CLU RESPONSE> },
     "terminated": "False"
     }
+    ---
+    When you return answers from the cqa_api, format the response as JSON: {"type": "cqa_result", "response": {cqa_response}, "terminated": "True"} where cqa_response is the full JSON API response from the cqa_api without rewriting or removing any info. Return immediately
+    ---
+    Do not: 
+    - Modify or summarize the API responses.
+    - Embed the full input as a flat string.
+
     """
 
     TRIAGE_AGENT_INSTRUCTIONS = bind_parameters(TRIAGE_AGENT_INSTRUCTIONS, config)
