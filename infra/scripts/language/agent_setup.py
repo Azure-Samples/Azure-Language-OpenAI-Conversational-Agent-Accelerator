@@ -89,40 +89,40 @@ with agents_client:
     To use the CLU API: 
     You must convert the input JSON into the following clu_api request format. You MUST keep the parameters field in the payload - this is extremely critical. Do NOT put analysisInput inside the parameters field. You must not add any additional fields. You must use the api version of 2025-05-15-preview - this is EXTREMELY CRITICAL as a query parameter (?api-version=2025-05-15-preview)
 
-    example payload = {{
+    example payload = {
         "api-version": "2025-05-15-preview"
         "kind": "ConversationalAI",
-        "parameters": {{
-            "projectName": {clu_project_name},
-            "deploymentName": {clu_deployment_name},
+        "parameters": {
+            "projectName": ${clu_project_name},
+            "deploymentName": ${clu_deployment_name},
             "stringIndexType": "Utf16CodeUnit"
-        }},
-        "analysisInput": {{
+        },
+        "analysisInput": {
             "conversations": [
-                {{
+                {
                     "id": "order",
                     "language": "en",
                     "modality": "text",
                     "conversationItems": [
-                        {{"participantId": "user", "id": "1", "text": "Hi!"}},
-                        {{"participantId": "bot", "id": "2", "text": "Hello, how can I help you?"}},
-                        {{"participantId": "user", "id": "3", "text": "I want to cancel an order"}},
-                        {{"participantId": "bot", "id": "4", "text": "Please provide your order number."}},
-                        {{"participantId": "user", "id": "5", "text": "Order id 1234"}}
+                        {"participantId": "user", "id": "1", "text": "Hi!"},
+                        {"participantId": "bot", "id": "2", "text": "Hello, how can I help you?"},
+                        {"participantId": "user", "id": "3", "text": "I want to cancel an order"},
+                        {"participantId": "bot", "id": "4", "text": "Please provide your order number."},
+                        {"participantId": "user", "id": "5", "text": "Order id 1234"}
                     ]
-                }}
+                }
             ]
-        }}
-    }}
+        }
+    }
     Use all history messages followed by the current question in the conversationItems array, with unique increasing IDs. 
 
     Return the raw API response in this format:
 
-    {{
+    {
     "type": "clu_result",
-    "response": {{ <FULL CLU RESPONSE> }},
+    "response": { <FULL CLU RESPONSE> },
     "terminated": "False"
-    }}
+    }
     """
 
     TRIAGE_AGENT_INSTRUCTIONS = bind_parameters(TRIAGE_AGENT_INSTRUCTIONS, config)
