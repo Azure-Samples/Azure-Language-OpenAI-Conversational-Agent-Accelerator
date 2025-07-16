@@ -1,19 +1,22 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+"""
+This script is a local script to interact with the GroupChatOrchestration class within the Semantic Kernel framework.
+It initializes agents, sets up a custom group chat manager, and runs an orchestration task.
+"""
+
 import os
 import json
-from semantic_kernel.agents import AzureAIAgent, AgentGroupChat, GroupChatOrchestration, RoundRobinGroupChatManager, GroupChatManager
-from semantic_kernel.agents.strategies import TerminationStrategy, SequentialSelectionStrategy
+import asyncio
+from semantic_kernel.agents import AzureAIAgent, GroupChatOrchestration, GroupChatManager, BooleanResult, StringResult, MessageResult
 from semantic_kernel.agents.runtime import InProcessRuntime
 from agents.order_status_plugin import OrderStatusPlugin
 from agents.order_refund_plugin import OrderRefundPlugin
 from agents.order_cancel_plugin import OrderCancellationPlugin
-from semantic_kernel.contents import AuthorRole, ChatMessageContent
-from azure.ai.projects import AIProjectClient
-from typing import Callable
+from semantic_kernel.contents import AuthorRole, ChatMessageContent, ChatHistory
 from azure.identity.aio import DefaultAzureCredential
 
-import asyncio
-from semantic_kernel.agents import GroupChatManager, BooleanResult, StringResult, MessageResult
-from semantic_kernel.contents import ChatMessageContent, ChatHistory
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -143,21 +146,7 @@ class CustomGroupChatManager(GroupChatManager):
                         result=next((agent for agent in participant_descriptions.keys() if agent == "HeadSupportAgent"), None),
                         reason="Routing to HeadSupportAgent for custom agent selection."
                     )
-                    # print("[SYSTEM]: CLU result received, checking intent, entities, and confidence...")
-                    # intent = parsed["response"]["result"]["prediction"]["topIntent"]
-                    # confidence = parsed["response"]["result"]["prediction"]["intents"][0]["confidenceScore"]
-    
-                    # # Filter based on confidence threshold
-                    # if confidence < confidence_threshold:
-                    #     print("CLU confidence threshold not met")
-                    #     raise ValueError("CLU confidence threshold not met")
-                    # else:
-                    #     print("[TriageAgent]: Detected Intent:", intent)
-                    #     print("[TriageAgent]: Identified Intent and Entities, routing to HeadSupportAgent for custom agent selection...")
-                    #     return StringResult(
-                    #         result=next((agent for agent in participant_descriptions.keys() if agent == "HeadSupportAgent"), None),
-                    #         reason="Routing to HeadSupportAgent for custom agent selection."
-                    #     )
+
             except Exception as e:
                 print(f"[SYSTEM]: Error processing TriageAgent message: {e}")
                 return StringResult(
@@ -248,7 +237,7 @@ async def main():
                 client=client,
                 definition=triage_agent_definition,
                 #description=""
-                description="A triage agent that routes inquiries to the proper custom agent and you must actually call the API tool. YOU MUST USE THE INTENTS FROM THE TRAINED CLU MODEL. DO NOT JUST RETURN THE INPUT PAYLOAD. ENSURE YOU CALL THE CLU OR CQA API TOOLS. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
+                description="A triage agent that routes inquiries to the proper custom agent and you must actually call the API tool. The response must be a valid JSON object.",
             )
 
             order_status_agent_definition = await client.agents.get_agent(AGENT_IDS["ORDER_STATUS_AGENT_ID"])
@@ -304,16 +293,9 @@ async def main():
                 runtime.start()
 
                 try:
-                    task_json = {
-                            "current_question": "what's the return policy",
-                            "history": [
-                            ]
-                        }
-
-
-                    task_string = json.dumps(task_json)
+                    task_string = "current question: order id 123, history: user - I want to check on an order, system - Please provide more information about your order so I can better assist you."
+                    
                     print(task_string)
-                    print(type(task_string))
 
                     orchestration_result = await orchestration.invoke(
                         task=task_string,
@@ -326,8 +308,6 @@ async def main():
                         print(f"\n***** Result *****\n{value}")
                         break  # Success
 
-                    except asyncio.TimeoutError:
-                        print("[TIMEOUT]: The orchestration result took too long.")
                     except Exception as e:
                         print(f"[EXCEPTION]: Orchestration failed with exception: {e}")
 
@@ -336,8 +316,8 @@ async def main():
                         await runtime.stop_when_idle()
                     except Exception as e:
                         print(f"[SHUTDOWN ERROR]: Runtime failed to shut down cleanly: {e}")
-                        
-                await asyncio.sleep(2)  # short delay before retry
+
+                await asyncio.sleep(2)
             else:
                 print(f"[FAILURE]: Max retries ({3}) reached. No successful response.")
 

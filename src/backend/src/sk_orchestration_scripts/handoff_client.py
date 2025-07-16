@@ -1,4 +1,13 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+"""
+This script is a local script to interact with the HandoffOrchestration class within the Semantic Kernel framework.
+It initializes agents, sets up handoffs, and runs an orchestration task.
+"""
+
 import os
+import asyncio
 from semantic_kernel.agents import AzureAIAgent, OrchestrationHandoffs, HandoffOrchestration
 from semantic_kernel.agents.runtime import InProcessRuntime
 from agents.order_status_plugin import OrderStatusPlugin
@@ -6,9 +15,6 @@ from agents.order_refund_plugin import OrderRefundPlugin
 from agents.order_cancel_plugin import OrderCancellationPlugin
 from semantic_kernel.contents import AuthorRole, ChatMessageContent
 from azure.identity.aio import DefaultAzureCredential
-from semantic_kernel.contents import AuthorRole, ChatMessageContent
-import asyncio
-from semantic_kernel.contents import ChatMessageContent
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -48,7 +54,6 @@ async def main():
                 client=client,
                 definition=triage_agent_definition,
                 description="A triage agent that routes inquiries to the proper custom agent"
-                #description="A triage agent that routes inquiries to the proper custom agent and you must actually call the API tool. YOU MUST USE THE INTENTS FROM THE TRAINED CLU MODEL. DO NOT JUST RETURN THE INPUT PAYLOAD. ENSURE YOU CALL THE CLU OR CQA API TOOLS. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
             )
 
             order_status_agent_definition = await client.agents.get_agent(AGENT_IDS["ORDER_STATUS_AGENT_ID"])

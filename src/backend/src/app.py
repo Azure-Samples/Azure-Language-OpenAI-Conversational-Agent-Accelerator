@@ -201,11 +201,6 @@ async def lifespan(app: FastAPI):
         logging.error(f"Error during setup: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    finally:
-        # Teardown
-        await client.__aexit__(None, None, None)
-        await creds.__aexit__(None, None, None)
-
 # Create FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")

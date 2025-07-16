@@ -16,6 +16,7 @@ from azure.ai.projects import AIProjectClient
 confidence_threshold = float(os.environ.get("CLU_CONFIDENCE_THRESHOLD", "0.5"))
 
 class CustomGroupChatManager(GroupChatManager):
+    # Custom logic for filtering results in the group chat
     async def filter_results(self, chat_history: ChatHistory) -> MessageResult:
         if not chat_history:
             return MessageResult(
@@ -31,15 +32,15 @@ class CustomGroupChatManager(GroupChatManager):
             reason="Returning the last agent's response."
         )
     
+    # Custom logic to decide if user input is needed
     async def should_request_user_input(self, chat_history: ChatHistory) -> BooleanResult:
-        # Custom logic to decide if user input is needed
         return BooleanResult(result=False, reason="No user input required.")
 
     # Function to create custom agent selection methods
     async def select_next_agent(self, chat_history, participant_descriptions):
         """
         Multi-agent orchestration method for Semantic Kernel Agent Group Chat.
-        This method decides how to select the next agent based on the current message and agent with custom logic.
+        This method decides how to select the next agent based on the current message and agent with custom logic based on agent responses.
         """
         last_message = chat_history[-1] if chat_history else None
         format_agent_response(last_message)
@@ -103,21 +104,7 @@ class CustomGroupChatManager(GroupChatManager):
                         result=next((agent for agent in participant_descriptions.keys() if agent == "HeadSupportAgent"), None),
                         reason="Routing to HeadSupportAgent for custom agent selection."
                     )
-                    # print("[SYSTEM]: CLU result received, checking intent, entities, and confidence...")
-                    # intent = parsed["response"]["result"]["prediction"]["topIntent"]
-                    # confidence = parsed["response"]["result"]["prediction"]["intents"][0]["confidenceScore"]
-    
-                    # # Filter based on confidence threshold
-                    # if confidence < confidence_threshold:
-                    #     print("CLU confidence threshold not met")
-                    #     raise ValueError("CLU confidence threshold not met")
-                    # else:
-                    #     print("[TriageAgent]: Detected Intent:", intent)
-                    #     print("[TriageAgent]: Identified Intent and Entities, routing to HeadSupportAgent for custom agent selection...")
-                    #     return StringResult(
-                    #         result=next((agent for agent in participant_descriptions.keys() if agent == "HeadSupportAgent"), None),
-                    #         reason="Routing to HeadSupportAgent for custom agent selection."
-                    #     )
+
             except Exception as e:
                 print(f"[SYSTEM]: Error processing TriageAgent message: {e}")
                 return StringResult(
@@ -226,8 +213,7 @@ class SemanticKernelOrchestrator:
         triage_agent = AzureAIAgent(
             client=self.client,
             definition=triage_agent_definition,
-            description=""
-            #description="A triage agent that routes inquiries to the proper custom agent. Ensure you do not use any special characters in the JSON response, as this will cause the agent to fail. The response must be a valid JSON object.",
+            description="A triage agent that routes inquiries to the proper custom agent."
         )
 
         order_status_agent_definition = await self.client.agents.get_agent(self.agent_ids["ORDER_STATUS_AGENT_ID"])
