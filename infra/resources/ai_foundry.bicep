@@ -138,3 +138,4 @@ output gpt_deployment_name string = ai_foundry::gpt_deployment.name
 output embedding_deployment_name string = ai_foundry::embedding_deployment.name
 output embedding_model_name string = ai_foundry::embedding_deployment.properties.model.name
 output embedding_model_dimensions int = embedding_model_dimensions
+output translator_resource_id string = ai_foundry.id

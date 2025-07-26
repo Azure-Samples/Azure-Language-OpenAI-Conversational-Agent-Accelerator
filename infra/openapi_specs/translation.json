@@ -1,0 +1,177 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Translation service",
+    "description": "Translate the given text into the requested target language.",
+    "version": "v3.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.cognitive.microsofttranslator.com"
+    }
+  ],
+  "paths": {
+    "/translate": {
+      "post": {
+        "tags": [
+          "Translate"
+        ],
+        "description": "Translates text into one or more languages.",
+        "operationId": "Translator_Translate",
+        "parameters": [
+          {
+            "name": "ocp-apim-subscription-region",
+            "in": "header",
+            "description": "The Azure region of the translation resource.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "${translator_region}"
+            }
+          },
+          {
+            "name": "ocp-apim-resourceid",
+            "in": "header",
+            "description": "The full Azure Resource ID of the Translator resource.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "${translator_resource_id}"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version to use. Must be 3.0.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "3.0"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "The source language. Optional if using auto-detect.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "The target language (ISO 2-letter code).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The text to translate.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TranslateTextInput"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslateResultAll"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TranslateTextInput": {
+        "type": "object",
+        "description": "Text of the request to be translated.",
+        "properties": {
+          "text": {
+            "type": "string",
+            "maximum": 5000
+          }
+        },
+        "example": {
+          "text": "I would really like to drive your car."
+        }
+      },
+      "TranslateResultAll": {
+        "type": "array",
+        "description": "Array of translation results.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "detectedLanguage": {
+              "type": "object",
+              "properties": {
+                "language": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "number"
+                }
+              }
+            },
+            "translations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorMessage": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

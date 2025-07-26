@@ -23,6 +23,8 @@ param orchestration_confidence_threshold string = '0.5'
 param pii_enabled string = 'true'
 param pii_categories string = 'organization,person'
 param pii_confidence_threshold string = '0.5'
+param translator_resource_id string
+param translator_region string = location
 
 // Search/AOAI:
 param aoai_endpoint string
@@ -144,6 +146,14 @@ resource container_instance 'Microsoft.ContainerInstance/containerGroups@2024-10
             {
               name: 'AOAI_DEPLOYMENT'
               value: aoai_deployment
+            }
+            {
+              name: 'TRANSLATOR_RESOURCE_ID'
+              value: translator_resource_id
+            }
+            {
+              name: 'TRANSLATOR_REGION'
+              value: translator_region
             }
             {
               name: 'SEARCH_ENDPOINT'

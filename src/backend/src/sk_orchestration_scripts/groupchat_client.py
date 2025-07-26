@@ -11,18 +11,18 @@ import json
 import asyncio
 from semantic_kernel.agents import AzureAIAgent, GroupChatOrchestration, GroupChatManager, BooleanResult, StringResult, MessageResult
 from semantic_kernel.agents.runtime import InProcessRuntime
-from agents.order_status_plugin import OrderStatusPlugin
-from agents.order_refund_plugin import OrderRefundPlugin
-from agents.order_cancel_plugin import OrderCancellationPlugin
+from semantic_kernel.functions import kernel_function
 from semantic_kernel.contents import AuthorRole, ChatMessageContent, ChatHistory
 from azure.identity.aio import DefaultAzureCredential
 
 from dotenv import load_dotenv
 load_dotenv()
 
+
 # Environment variables
 PROJECT_ENDPOINT = os.environ.get("AGENTS_PROJECT_ENDPOINT")
 MODEL_NAME = os.environ.get("AOAI_DEPLOYMENT")
+
 
 # Comment out for local testing:
 AGENT_IDS = {
@@ -31,10 +31,40 @@ AGENT_IDS = {
     "ORDER_STATUS_AGENT_ID": os.environ.get("ORDER_STATUS_AGENT_ID"),
     "ORDER_CANCEL_AGENT_ID": os.environ.get("ORDER_CANCEL_AGENT_ID"),
     "ORDER_REFUND_AGENT_ID": os.environ.get("ORDER_REFUND_AGENT_ID"),
+    "TRANSLATION_AGENT_ID": os.environ.get("TRANSLATION_AGENT_ID"),
+    "CUSTOMER_TRANSLATE_AGENT_ID": os.environ.get("CUSTOMER_TRANSLATE_AGENT_ID"),
+    "SINGLE_TRANSLATE_AGENT_ID": os.environ.get("SINGLE_TRANSLATE_AGENT_ID"),
 }
 
 # Define the confidence threshold for CLU intent recognition
 confidence_threshold = float(os.environ.get("CLU_CONFIDENCE_THRESHOLD", "0.5"))
+
+
+# Agent plugins
+class OrderCancellationPlugin:
+    @kernel_function
+    def process_cancellation(self, order_id: str) -> str:
+        """Process a cancellation for an order."""
+        # Simulate processing a cancellation
+        print(f"[CancellationPlugin] Processing cancellation for order {order_id}")
+        return f"Cancellation for order {order_id} has been processed successfully."
+
+
+class OrderRefundPlugin:
+    @kernel_function
+    def process_refund(self, order_id: str) -> str:
+        """Process a refund for an order."""
+        # Simulate processing a refund
+        print(f"[RefundPlugin] Processing refund for order {order_id}")
+        return f"Refund for order {order_id} has been processed successfully."
+
+
+class OrderStatusPlugin:
+    @kernel_function
+    def check_order_status(self, order_id: str) -> str:
+        """Check the status of an order."""
+        print(f"[OrderStatusPlugin] Checking status for order {order_id}")
+        return f"Order {order_id} is shipped and will arrive in 2-3 days."
 
 
 class CustomGroupChatManager(GroupChatManager):
@@ -55,25 +85,6 @@ class CustomGroupChatManager(GroupChatManager):
 
     async def should_request_user_input(self, chat_history: ChatHistory) -> BooleanResult:
         # Custom logic to decide if user input is needed
-        if not chat_history:
-            return BooleanResult(result=False, reason="No messages in chat history.")
-
-        # Get the last message from the chat history
-        last_message = chat_history[-1]
-
-        try:
-            # Parse the last message content as JSON
-            parsed_content = json.loads(last_message.content)
-
-            # Check if 'need_more_info' exists and is True
-            need_more_info = parsed_content.get("need_more_info") == "True"
-            if need_more_info:
-                return BooleanResult(result=True, reason="User input is required based on the last message.")
-        except json.JSONDecodeError:
-            return BooleanResult(
-                result=False,
-                reason="Last message content is not valid JSON."
-            )
         return BooleanResult(
             result=False,
             reason="No user input needed based on the last message."
@@ -92,36 +103,34 @@ class CustomGroupChatManager(GroupChatManager):
         if not last_message or last_message.role == AuthorRole.USER:
 
             if len(chat_history) == 1:
-                print("[SYSTEM]: Last message is from the USER, routing to TriageAgent for initial triage...")
+                print("[SYSTEM]: Last message is from the USER, routing to translator for initial translation...")
 
                 try:
                     return StringResult(
-                        result=next((agent for agent in participant_descriptions.keys() if agent == "TriageAgent"), None),
-                        reason="Routing to TriageAgent for initial triage."
+                        result=next((agent for agent in participant_descriptions.keys() if agent == "TranslationAgent"), None),
+                        reason="Routing to TranslationAgent for initial translation."
                     )
                 except Exception as e:
-                    print(f"[SYSTEM]: Error routing to TriageAgent, returning None. Exception: {e}")
                     return StringResult(
                         result=None,
-                        reason="Error routing to TriageAgent."
+                        reason=f"Error routing to TranslationAgent: {e}"
                     )
-            else:
-                print("[SYSTEM]: Last message is from the USER, routing back to custom agent...")
 
-                # If the last message is from the user, route to the last agent that responded
-                last_agent = chat_history[-2].name if len(chat_history) > 1 else None
-                if last_agent and last_agent in participant_descriptions:
-                    print(f"[SYSTEM]: Routing back to last agent: {last_agent}")
-                    return StringResult(
-                        result=last_agent,
-                        reason=f"Routing back to last agent: {last_agent}."
-                    )
-                else:
-                    print("[SYSTEM]: No valid last agent found, returning None.")
-                    return StringResult(
-                        result=None,
-                        reason="No valid last agent found."
-                    )
+        elif last_message.name == "TranslationAgent":
+            try:
+                parsed = json.loads(last_message.content)
+                response = parsed['response']
+                print("[TranslationAgent] Translated message:", response)
+
+                return StringResult(
+                    result=next((agent for agent in participant_descriptions.keys() if agent == "TriageAgent"), None),
+                    reason="Routing to TriageAgent for message translation."
+                )
+            except Exception as e:
+                return StringResult(
+                    result=None,
+                    reason=f"Error routing to TriageAgent: {e}"
+                )
 
         # Process triage agent messages
         elif last_message.name == "TriageAgent":
@@ -175,6 +184,17 @@ class CustomGroupChatManager(GroupChatManager):
                     reason="Error processing HeadSupportAgent message."
                 )
 
+        elif last_message.name in ["OrderStatusAgent", "OrderCancelAgent", "OrderRefundAgent"]:
+            print(f"[SYSTEM]: Last message is from {last_message.name}, returning to TranslationAgent for final routing.")
+            try:
+                parsed = json.loads(last_message.content)
+
+                return StringResult(
+                    result=next((agent for agent in participant_descriptions.keys() if agent == "TranslationAgent"), None),
+                    reason="Handle final message formatting"
+                )
+            except Exception as e:
+                print(f"[SYSTEM]: Error preparing TranslationAgent follow-up: {e}")
         # Default case
         print("[SYSTEM]: No valid routing logic found, returning None.")
         return StringResult(
@@ -196,34 +216,17 @@ class CustomGroupChatManager(GroupChatManager):
                 reason="No messages in chat history."
             )
 
-        # Check if the last message contains termination or need_more_info flags
-        try:
-            parsed_content = json.loads(last_message.content)
-            terminated = parsed_content.get("terminated") == "True"
-            need_more_info = parsed_content.get("need_more_info") == "True"
-
-            if terminated or need_more_info:
-                return BooleanResult(
-                    result=True,
-                    reason="Chat terminated due to agent response."
-                )
-        except json.JSONDecodeError:
+        if last_message.name == "TranslationAgent" and len(chat_history) > 3:
+            print(last_message.name)
             return BooleanResult(
-                result=False,
-                reason="Failed to parse last message content."
+                result=True,
+                reason="Chat terminated due to TranslationAgent response."
             )
 
-        # Default case: no termination
         return BooleanResult(
             result=False,
             reason="No termination flags found in last message."
         )
-
-
-async def human_response_function(chat_histoy: ChatHistory) -> ChatMessageContent:
-    """Function to get user input."""
-    user_input = input("User: ")
-    return ChatMessageContent(role=AuthorRole.USER, content=user_input)
 
 
 def agent_response_callback(message: ChatMessageContent) -> None:
@@ -274,20 +277,26 @@ async def main():
                 description="A head support agent that routes inquiries to the proper custom agent.",
             )
 
+            translation_agent_definition = await client.agents.get_agent(AGENT_IDS["TRANSLATION_AGENT_ID"])
+            translation_agent = AzureAIAgent(
+                client=client,
+                definition=translation_agent_definition,
+                description="Translates into English",
+            )
+
             print("Agents initialized successfully.")
             print(f"Triage Agent ID: {triage_agent.id}")
             print(f"Head Support Agent ID: {head_support_agent.id}")
             print(f"Order Status Agent ID: {order_status_agent.id}")
             print(f"Order Cancel Agent ID: {order_cancel_agent.id}")
             print(f"Order Refund Agent ID: {order_refund_agent.id}")
+            print(f"Translation Agent ID: {translation_agent.id}")
 
-            created_agents = [triage_agent, head_support_agent, order_status_agent, order_cancel_agent, order_refund_agent]
+            created_agents = [translation_agent, triage_agent, head_support_agent, order_status_agent, order_cancel_agent, order_refund_agent]
 
             orchestration = GroupChatOrchestration(
                 members=created_agents,
-                manager=CustomGroupChatManager(
-                    human_response_function=human_response_function,
-                ),
+                manager=CustomGroupChatManager(),
             )
 
             for attempt in range(1, 3):
@@ -296,7 +305,11 @@ async def main():
                 runtime.start()
 
                 try:
-                    task_string = "current question: order id 123, history: user - I want to check on an order, system - Please provide more information about your order so I can better assist you."
+                    task_json = {
+                        "query": "quiero cancelar mi pedido 12345",
+                        "to": "english"
+                    }
+                    task_string = json.dumps(task_json)
                     print(task_string)
 
                     orchestration_result = await orchestration.invoke(
@@ -337,4 +350,4 @@ def format_agent_response(response):
 
 if __name__ == "__main__":
     asyncio.run(main())
-    print("Agent setup completed successfully.")
+    print("Agent orchestration completed successfully.")

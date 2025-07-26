@@ -98,6 +98,7 @@ module container_instance 'resources/container_instance.bicep' = {
     aoai_deployment: ai_foundry.outputs.gpt_deployment_name
     aoai_endpoint: ai_foundry.outputs.openai_endpoint
     language_endpoint: ai_foundry.outputs.language_endpoint
+    translator_resource_id: ai_foundry.outputs.translator_resource_id
     managed_identity_name: managed_identity.outputs.name
     search_endpoint: search_service.outputs.endpoint
     blob_container_name: storage_account.outputs.blob_container_name

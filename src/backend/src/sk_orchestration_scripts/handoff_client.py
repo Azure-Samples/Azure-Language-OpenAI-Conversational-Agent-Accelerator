@@ -10,9 +10,7 @@ import os
 import asyncio
 from semantic_kernel.agents import AzureAIAgent, OrchestrationHandoffs, HandoffOrchestration
 from semantic_kernel.agents.runtime import InProcessRuntime
-from agents.order_status_plugin import OrderStatusPlugin
-from agents.order_refund_plugin import OrderRefundPlugin
-from agents.order_cancel_plugin import OrderCancellationPlugin
+from semantic_kernel.functions import kernel_function
 from semantic_kernel.contents import AuthorRole, ChatMessageContent
 from azure.identity.aio import DefaultAzureCredential
 from dotenv import load_dotenv
@@ -33,6 +31,32 @@ AGENT_IDS = {
 
 # Define the confidence threshold for CLU intent recognition
 confidence_threshold = float(os.environ.get("CLU_CONFIDENCE_THRESHOLD", "0.5"))
+
+# Agent plugins
+class OrderCancellationPlugin:
+    @kernel_function
+    def process_cancellation(self, order_id: str) -> str:
+        """Process a cancellation for an order."""
+        # Simulate processing a cancellation
+        print(f"[CancellationPlugin] Processing cancellation for order {order_id}")
+        return f"Cancellation for order {order_id} has been processed successfully."
+
+
+class OrderRefundPlugin:
+    @kernel_function
+    def process_refund(self, order_id: str) -> str:
+        """Process a refund for an order."""
+        # Simulate processing a refund
+        print(f"[RefundPlugin] Processing refund for order {order_id}")
+        return f"Refund for order {order_id} has been processed successfully."
+
+
+class OrderStatusPlugin:
+    @kernel_function
+    def check_order_status(self, order_id: str) -> str:
+        """Check the status of an order."""
+        print(f"[OrderStatusPlugin] Checking status for order {order_id}")
+        return f"Order {order_id} is shipped and will arrive in 2-3 days."
 
 
 def human_response_function() -> ChatMessageContent:

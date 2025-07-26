@@ -151,6 +151,17 @@ resource search_cognitive_services_openai_contributor_role_assignment 'Microsoft
   }
 }
 
+// PRINCIPAL: AI Foundry (Cognitive Services User)
+resource foundry_cognitive_services_user_role_assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(ai_foundry.id, ai_foundry.id, cognitive_services_user_role.id)
+  scope: ai_foundry
+  properties: {
+    principalId: ai_foundry.identity.principalId
+    roleDefinitionId: cognitive_services_user_role.id
+    principalType: 'ServicePrincipal'
+  }
+}
+
 //----------- Built-in Roles -----------//
 @description('Built-in Storage Blob Data Contributor role (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-contributor).')
 resource storage_blob_data_contributor_role 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
@@ -190,6 +201,11 @@ resource azure_ai_account_owner_role 'Microsoft.Authorization/roleDefinitions@20
 @description('Built-in Azure AI Account User role (https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/rbac-azure-ai-foundry?pivots=fdp-project#azure-ai-user).')
 resource azure_ai_account_user_role 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
   name: '53ca6127-db72-4b80-b1b0-d745d6d5456d'
+}
+
+@description('Built-in Cognitive Services User role (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/cognitive-services-user).')
+resource cognitive_services_user_role 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  name: 'a97b65f3-24c7-4388-baec-2e87135dc908'
 }
 
 //----------- Outputs -----------//

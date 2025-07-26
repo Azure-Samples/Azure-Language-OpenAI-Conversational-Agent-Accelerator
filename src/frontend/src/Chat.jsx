@@ -6,6 +6,8 @@ import Markdown from 'react-markdown'
 const Chat = () => {
     const [messages, setMessages] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
+    const [needMoreInfo, setNeedMoreInfo] = useState(false);
+
     const messageEndRef = useRef(null);
     const welcomeMessage = 'Ask a question...';
 
@@ -18,20 +20,11 @@ const Chat = () => {
     }, [messages]);
 
     const createSystemInput = (userMessageContent) => {
-        console.log(messages);
 
         const lastTwoMessages = messages.slice(-2);
 
-        // Check if either message includes "please provide more information"
-        const containsFollowUpRequest = lastTwoMessages.some(msg =>
-            msg.content.toLowerCase().includes("please provide more information")
-        );
-
-        const historyString = containsFollowUpRequest
-            ? lastTwoMessages.map(msg => `${msg.role.toLowerCase()}: ${msg.content}`).join(", ")
-            : "empty";
-
-        const formattedString = `current_question: ${userMessageContent}, history: ${historyString}`;
+        const historyMessages = needMoreInfo ? lastTwoMessages : [];
+        console.log(historyMessages);
 
         return {
             method: "POST",
@@ -40,15 +33,18 @@ const Chat = () => {
                 "Accept": "application/json"
             },
             body: JSON.stringify({
-                message: formattedString,
+                message: userMessageContent,
+                history: historyMessages,
             })
-        }
+        };
     };
 
     const parseSystemResponse = (systemResponse) => {
-        const messages = systemResponse["messages"]
-        return messages
-    }
+        return {
+            messages: systemResponse["messages"] || [],
+            needMoreInfo: systemResponse["need_more_info"] || false
+        };
+    };
 
     const chatWithSystem = async (userMessageContent) => {
         try {
@@ -62,12 +58,15 @@ const Chat = () => {
             }
 
             const systemResponse = await response.json();
-            const systemMessages = parseSystemResponse(systemResponse);
-            console.log(systemMessages)
+            const { messages, needMoreInfo } = parseSystemResponse(systemResponse);
 
-            return systemMessages;
+            console.log("System messages:", messages);
+            setNeedMoreInfo(needMoreInfo);
+
+            return { messages };
         } catch (error) {
-            console.error("Error while processing chat: ", error)
+            console.error("Error while processing chat: ", error);
+            return { messages: [] };
         }
     };
 
@@ -77,12 +76,13 @@ const Chat = () => {
         ]);
 
         setIsTyping(true);
-        const systemMessages = await chatWithSystem(userMessageContent);
+        const { messages: systemMessages } = await chatWithSystem(userMessageContent);
         setIsTyping(false);
 
         for (const msg of systemMessages) {
             setMessages((prevMessages) => [
-                ...prevMessages, { role: "System", content: msg }
+                ...prevMessages, 
+                { role: "System", content: msg }
             ]);
         }
     };
