@@ -17,7 +17,7 @@ This template, the application code and configuration it contains, have been bui
 
 This solution leverages the combined capabilities of Azure AI Language, Azure AI Agent Service and Azure OpenAI for enhanced conversational agent solutions. The following image is a reference architecture diagram of this Agent template.
 
-![image](./docs/images/sk_flow.png)
+![image](./docs/images/sk_flow_translate.png)
 
 1. **Client-Side User Interface:** A web-based client-side user interface allows you to quickly explore and test this Agent template.
 2. **Orchestrator:** The orchestrator allows for a dynamic, adaptable workflow with multiple orchestration options including utilizing an intent routing agent based on [this template](https://github.com/azure-ai-foundry/foundry-samples/tree/main/samples/agent-catalog/msft-agent-samples/foundry-agent-service-sdk/intent-routing-agent), LLM function calling, CLU for intent identification only and CQA for returning exact pre-set answers only, etc. Both intent routing agent and LLM function calling options leverages CLU and CQA to provide high-quality intent identficiation and exact question-answering. See the routing strategies section down below for more details between these options. 

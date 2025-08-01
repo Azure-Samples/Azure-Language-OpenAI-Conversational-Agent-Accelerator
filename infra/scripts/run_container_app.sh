@@ -49,5 +49,18 @@ python3 -m pip install -r requirements.txt
 cd src
 cp -r ${frontend_dir}/dist .
 
-# Run the uvicorn server
-python3 -m uvicorn app:app --host 0.0.0.0 --port 8000
+# Check if APP_MODE is set, default to semantic_kernel
+APP_MODE=${APP_MODE:-semantic_kernel}
+
+# Launch the app:
+echo "Launching the app based on the environment variable APP_MODE..."
+if [ "$APP_MODE" == "SEMANTIC_KERNEL" ]; then
+    echo "Launching app with agents (semantic_kernel_app.py)..."
+    python3 -m uvicorn semantic_kernel_app:app --host 0.0.0.0 --port 8000
+elif [ "$APP_MODE" == "CLASSIC" ]; then
+    echo "Launching non-agent classic app (classic_app.py)..."
+    python3 -m uvicorn classic_app:app --host 0.0.0.0 --port 8000
+else
+    echo "Unknown APP_MODE: $APP_MODE"
+    exit 1
+fi

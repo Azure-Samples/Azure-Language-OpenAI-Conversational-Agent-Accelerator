@@ -6,7 +6,6 @@ import logging
 from typing import Callable
 from azure.ai.agents import AgentsClient
 from azure.ai.agents.models import ListSortOrder, AgentThread
-from router.clu_router import parse_response as parse_clu_response
 from router.cqa_router import parse_response as parse_cqa_response
 from utils import get_azure_credential
 
@@ -14,6 +13,22 @@ _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.INFO)
 
 PII_ENABLED = os.environ.get("PII_ENABLED", "false").lower() == "true"
+CONFIG_DIR = os.environ.get("CONFIG_DIR", ".")
+
+# Load agent IDs from config file
+config_file = os.path.join(CONFIG_DIR, "config.json")
+if os.path.exists(config_file):
+    with open(config_file, "r") as f:
+        AGENT_IDS = json.load(f)
+else:
+    AGENT_IDS = {}
+
+# triage_agent_id = os.environ.get("TRIAGE_AGENT_ID")
+triage_agent_id = AGENT_IDS.get("TRIAGE_AGENT_ID")
+if not triage_agent_id:
+    error_msg = "Missing required agent ID: TRIAGE_AGENT_ID"
+    logging.error(error_msg)
+    raise ValueError(error_msg)
 
 
 def create_triage_agent_router() -> Callable[[str, str, str], dict]:
@@ -27,8 +42,7 @@ def create_triage_agent_router() -> Callable[[str, str, str], dict]:
         credential=credential,
         api_version="2025-05-15-preview"
     )
-    agent_id = os.environ.get("TRIAGE_AGENT_ID")
-    agent = agents_client.get_agent(agent_id=agent_id)
+    agent = agents_client.get_agent(agent_id=triage_agent_id)
 
     def triage_agent_router(
         utterance: str,
@@ -114,6 +128,7 @@ def handle_successful_run(
             # Load the agent response into a JSON
             try:
                 data = json.loads(last_text.text.value)
+                print(data)
                 _logger.info(f"Agent response parsed successfully: {data}")
                 parsed_result = parse_response(data)
                 return parsed_result
@@ -126,6 +141,30 @@ def handle_successful_run(
     # If no valid response found, raise an error to be handled by the caller
     _logger.error("No valid agent response found in the thread.")
     raise ValueError("No valid agent response found in the thread.")
+
+
+def parse_convai_clu_response(
+    response: dict
+) -> dict:
+    """
+    Parse CLU response from ConvAI CLU tool used by the triage agent.
+    """
+    intent = response["result"]["conversations"][0]["intents"][0]["name"]
+    entities = response["result"]["conversations"][0]["entities"]
+    error = None
+
+    # Filter based on intent:
+    if intent == "None":
+        _logger.warning("No intent recognized")
+        error = "No intent recognized"
+
+    return {
+        "kind": "clu_result",
+        "error": error,
+        "intent": intent,
+        "entities": entities,
+        "api_response": response
+    }
 
 
 def parse_response(
@@ -141,7 +180,7 @@ def parse_response(
 
     # Parse the response based on tool used
     if kind == "clu_result":
-        parsed_result = parse_clu_response(
+        parsed_result = parse_convai_clu_response(
             response=response["response"]
         )
     elif kind == "cqa_result":

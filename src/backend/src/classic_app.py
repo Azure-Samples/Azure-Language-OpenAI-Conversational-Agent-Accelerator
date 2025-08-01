@@ -5,17 +5,25 @@ import json
 import importlib
 import pii_redacter
 from json import JSONDecodeError
-from flask import Flask, request, jsonify, render_template
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from azure.search.documents import SearchClient
 from aoai_client import AOAIClient, get_prompt
 from router.router_type import RouterType
 from unified_conversation_orchestrator import UnifiedConversationOrchestrator
 from utils import get_azure_credential
 
-# Flask server:
-app = Flask(__name__, static_url_path='',
-            static_folder='dist',
-            template_folder='dist')
+
+DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
+# log dist_dir
+print(f"DIST_DIR: {DIST_DIR}")
+
+
+# FastAPI app:
+app = FastAPI()
+app.mount("/assets", StaticFiles(directory=os.path.join(DIST_DIR, "assets")), name="assets")
+
 
 # RAG AOAI client:
 search_client = SearchClient(
@@ -23,12 +31,15 @@ search_client = SearchClient(
     index_name=os.environ.get("SEARCH_INDEX_NAME"),
     credential=get_azure_credential()
 )
+
+
 rag_client = AOAIClient(
     endpoint=os.environ.get("AOAI_ENDPOINT"),
     deployment=os.environ.get("AOAI_DEPLOYMENT"),
     use_rag=True,
     search_client=search_client
 )
+
 
 # Extract-utterances AOAI client:
 extract_prompt = get_prompt("extract_utterances.txt")
@@ -37,6 +48,7 @@ extract_client = AOAIClient(
     deployment=os.environ.get("AOAI_DEPLOYMENT"),
     system_message=extract_prompt
 )
+
 
 # PII:
 PII_ENABLED = os.environ.get("PII_ENABLED", "false").lower() == "true"
@@ -123,12 +135,10 @@ def orchestrate_chat(message: str) -> list[str]:
             # Here, you may call external functions based on recognized intent:
             hooks_module = importlib.import_module("clu_hooks")
             hook_func = getattr(hooks_module, intent)
-
             response = hook_func(entities)
 
         elif orchestration_response["route"] == "cqa":
             answer = orchestration_response["result"]["answer"]
-
             response = answer
 
         print(f"Orchestration response: {orchestration_response}")
@@ -142,19 +152,21 @@ def orchestrate_chat(message: str) -> list[str]:
     return responses
 
 
-@app.route("/")
-def home_page():
-    return render_template("index.html")
+@app.get("/", response_class=HTMLResponse)
+async def home_page():
+    """Serve the index.html page."""
+    with open("dist/index.html", "r", encoding="utf-8") as f:
+        return f.read()
 
 
-@app.route("/chat", methods=['POST'])
-def chat():
-    content = request.json
+@app.post("/chat")
+async def chat(request: Request):
+    content = await request.json()
     message = content["message"]
 
     responses = orchestrate_chat(message)
 
     print(f"responses: {responses}")
-    return jsonify({
+    return JSONResponse({
         "messages": responses
     })
