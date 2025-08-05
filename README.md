@@ -20,10 +20,10 @@ This solution leverages the combined capabilities of Azure AI Language, Azure AI
 ![image](./docs/images/sk_flow_translate.png)
 
 1. **Client-Side User Interface:** A web-based client-side user interface allows you to quickly explore and test this Agent template.
-2. **Orchestrator:** The orchestrator allows for a dynamic, adaptable workflow with multiple orchestration options including utilizing an intent routing agent based on [this template](https://github.com/azure-ai-foundry/foundry-samples/tree/main/samples/agent-catalog/msft-agent-samples/foundry-agent-service-sdk/intent-routing-agent), LLM function calling, CLU for intent identification only and CQA for returning exact pre-set answers only, etc. Both intent routing agent and LLM function calling options leverages CLU and CQA to provide high-quality intent identficiation and exact question-answering. See the routing strategies section down below for more details between these options. 
-3. **Conversational Language Understanding (CLU):** CLU enables you to define the top intents to ensure response quality. Whether completing a task or addressing specific customer needs, CLU provides a mechanism to ensure the agent accurately understands and executes the process of handling predefined intents. You can update the top intents as necessary to accommodate evolving business needs.
-4. **Custom Question Answering (CQA):** CQA allows you to create and manage predefined QA pairs to deliver precise responses. CQA can respond consistently, improving reliability, particularly for high-stakes or regulatory-sensitive conversations. You can update the predefined QA pairs as needed to match your growing business needs.
-5. **PII Detection and Redaction (PII):** Protecting user privacy is a top priority. Azure AI Language’s Personally Identifiable Information (PII) can identify and redact sensitive information before sending to LLM for processing.
+2. **Orchestrator:** The orchestrator allows for a dynamic, adaptable workflow with multiple orchestration options including utilizing Semantic Kernel's group chat orchestration with an intent routing agent (based on [this template](https://github.com/azure-ai-foundry/foundry-samples/tree/main/samples/agent-catalog/msft-agent-samples/foundry-agent-service-sdk/intent-routing-agent)) as the manager agent to moderate and route the conversation, LLM function calling, CLU for intent identification only and CQA for returning exact pre-set answers only, etc. Both intent routing agent and LLM function calling options leverages CLU and CQA to provide high-quality intent identficiation and exact question-answering. See the routing strategies section down below for more details between these options. 
+3. **Conversational Language Understanding (CLU):** CLU enables you to define the top intents to ensure response quality. Whether completing a task or addressing specific customer needs, CLU provides a mechanism to ensure the agent accurately understands and executes the process of handling predefined intents. You can update the top intents as necessary to accommodate evolving business needs. Check out [the CLU product documents](https://learn.microsoft.com/azure/ai-services/language-service/conversational-language-understanding/overview) for more details.
+4. **Custom Question Answering (CQA):** CQA allows you to create and manage predefined QA pairs to deliver precise responses. CQA can respond consistently, improving reliability, particularly for high-stakes or regulatory-sensitive conversations. You can update the predefined QA pairs as needed to match your growing business needs. Check out [the CQA product documents](https://learn.microsoft.com/azure/ai-services/language-service/question-answering/overview) for more details.
+5. **PII Detection and Redaction (PII):** Protecting user privacy is a top priority. Azure AI Language’s Personally Identifiable Information (PII) can identify and redact sensitive information before sending to LLM for processing. Check out [the PII product documents](https://learn.microsoft.com/azure/ai-services/language-service/personally-identifiable-information/overview?tabs=text-pii) for more details.
 6. **Large Language Model with Retrieval-Augmented Generation (LLM with RAG) to Handle Everything Else:** In this template, we are showcasing a RAG solution using Azure AI Search to handle missed intents or user queries on lower-priority topics. This RAG solution can be replaced with your existing one.  
 7. **Template Configuration for "Plug-and-Play":** The template is designed to allow you to easily swap, add, or remove components to tailor to your specific needs. Whether you want to add custom intents, adjust fallback mechanisms, or incorporate additional data sources, the modular nature of this template makes it simple to configure.
 
@@ -44,12 +44,14 @@ Azure AI Language CQA can help address these issues and expand the functionality
 
 ## Agent Architecture
 ![image](./docs/images/architecture.png)
-This project includes a `UnifiedConversationOrchestrator` class that unifies the call to different routing strategies, which can intelligently route user input to intent routing agent, CLU-only, CQA-only, etc., based on the specified router type.
+This project includes a `UnifiedConversationOrchestrator` class that unifies the call to different routing strategies, which can intelligently route user input to intent routing agent, CLU-only, CQA-only, etc., based on the specified router type. 
+
+The intent routing agent is implemented with Semantic Kernel's group chat orchestration. It uses `CLU` and `CQA` as tools to predict intents based on your custom intents defined in `CLU` and answer FAQs if the corresponding question-answer pairs are created in `CQA`. In this orchestration, the intent routing agent takes the manager agent role to moderate and route the user queries to other appropriate agents as needed based on the results from `CLU` and `CQA`. 
 
 There is also fallback functionality when any of the following occurs: neither runtime is called, API call failed, confidence threshold not met, `CLU` did not recognize an intent, or `CQA` failed to answer the question. This fallback functionality can be configured to be any function. In this user-story, fallback will be the original `RAG` solution. The orchestrator object takes a string message as input, and outputs a dictionary object containing information regarding what runtime was called, relevant outputs, was fallback called, etc.
 
 When combined with an existing `RAG` solution, adding a `UnifiedConversationOrchestrator` can help in the following ways:
-- Use 'CQA' to quick fix and override incorrect answers from 'RAG' solution.
+- Use `CQA` to quick fix and override incorrect answers from `RAG` solution.
 - Extended chat functionality based on recognized intents/entities using `CLU`.
 - Consistent fallback to original chat functionality with `RAG`.
 Further, users can provide their own business logic to call based on `CLU` results (e.g. with an `OrderStatus` intent and `OrderId` entity, user can include business logic to query a database to check the order status).
@@ -57,8 +59,8 @@ Further, users can provide their own business logic to call based on `CLU` resul
 The container instance demo included with this project showcases the following chat experience:
 - User inputs chat dialog.
 - AOAI node preprocesses by breaking input into separate utterances.
-- Orchestrator routes each utterance to either `CLU`, `CQA` (through an intent routing agent, LLM function calls or direct API call), or fallback `RAG`.
-- If `CLU` was called, call extended business logic based on intent/entities.
+- Orchestrator routes each utterance to either an intent routing agent (with `CLU` and `CQA`), LLM function calls, directly fallback `RAG`, etc., based on your routing strategy value assigned to `router_type` in `server.py` (all valid routing strategy values are listed in the "Routing strategies" section below).
+- If an intent defined in `CLU` was predicted, call extended business agent/logic based on intent/entities.
 - Agent summarizes response (what business action was performed, provide answer to question, provide grounded response).
 
 ### Use Case
@@ -76,17 +78,17 @@ This displays the "better together" story when using Azure AI Language with Azur
 **GenAI is used in the following contexts:**
 - Demo code: General AOAI GPT chat client to break user inputs into separate utterances.
 - Demo code: General AOAI GPT `RAG` client to provide grounded responses as a fallback function.
-- Orchestrator: one routing option uses AOAI GPT function-calling to decide whether to call `CLU` or `CQA` runtimes, and another option that uses an intent routing agent with 'CLU' and 'CQA' as tools.
+- Orchestrator: one routing option uses AOAI GPT function-calling to decide whether to call `CLU` or `CQA` runtimes, and another option that uses an intent routing agent with `CLU` and `CQA` as tools.
 
 **Sample Data:** This project includes sample data to create project dependencies. Sample data is in the context of a fictional outdoor product company: Contoso Outdoors.
 
 **Routing strategies:**
-- 'TRIAGE_AGENT': Route to an intent routing agent that uses 'CLU' and 'CQA' as tools.
+- `TRIAGE_AGENT`: Route to an intent routing agent that uses `CLU` and `CQA` as tools.
 - `FUNCTION_CALLING`: Route to either `CLU` or `CQA` runtime using AOAI GPT function-calling to decide.
 - `CLU`: Route to `CLU` runtime only.
 - `CQA`: Route to `CQA` runtime only.
 - `ORCHESTRATION`: Route to either `CQA` or `CLU` runtime using an Azure AI Language [Orchestration](https://learn.microsoft.com/en-us/azure/ai-services/language-service/orchestration-workflow/overview) project to decide.
-- BYPASS: No routing. Only call fallback function.
+- `BYPASS`: No routing. Only call fallback function.
 
 In any case, the fallback function is called if routing "failed". `CLU` route is considered "failed" is confidence threshold is not met or no intent is recognized. `CQA` route is considered "failed" if confidence threhsold is not met or no answer is found. `TRIAGE_AGENT`, `FUNCTION_CALLING` and `ORCHESTRATION` route depend on the return value of the runtime they call.
 
