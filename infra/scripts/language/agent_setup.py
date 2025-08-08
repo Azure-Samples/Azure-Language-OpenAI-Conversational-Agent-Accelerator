@@ -2,8 +2,7 @@ import json
 import os
 from azure.ai.agents import AgentsClient
 from azure.ai.agents.models import OpenApiTool, OpenApiManagedAuthDetails, OpenApiManagedSecurityScheme
-from azure.identity import DefaultAzureCredential
-from utils import bind_parameters
+from utils import bind_parameters, get_azure_credential
 
 config = {}
 
@@ -25,7 +24,7 @@ config['translator_resource_id'] = os.environ.get("TRANSLATOR_RESOURCE_ID")
 # Create agent client
 agents_client = AgentsClient(
     endpoint=PROJECT_ENDPOINT,
-    credential=DefaultAzureCredential(),
+    credential=get_azure_credential(),
     api_version="2025-05-15-preview"
 )
 
